@@ -1,0 +1,23 @@
+{
+  "contextStatus": 200,
+  "method": "caa-published-punctuality-v1",
+  "probabilities": [
+    0.125,
+    0.044514388489208634,
+    0.0022482014388489208
+  ],
+  "sample": 2224,
+  "forecastPanels": [
+    "available",
+    "available"
+  ],
+  "authorizationExposed": false,
+  "errors": [],
+  "inputChangeClearsResults": true,
+  "lateResponseDoesNotPublishStaleResults": true,
+  "typecheck": "passed",
+  "unitTests": {
+    "passed": 49,
+    "files": 7
+  }
+}
