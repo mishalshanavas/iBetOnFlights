@@ -29,6 +29,7 @@ export function evaluateCompensation(raw:AssessmentInput) {
   let applies:boolean|null=covered(origin.countryCode)?true:covered(destination.countryCode)?input.airlineJurisdiction==="UNKNOWN"?null:input.airlineJurisdiction==="EU":false;
   // Swiss and UK domestic regimes require a distinct adapter; never imply EU membership.
   if(input.ticketType==="non_public_free" || (!covered(origin.countryCode)&&input.thirdCountryBenefits))applies=false;
+  if(input.date<"2005-02-17")applies=false;
   let status:Eligibility="POTENTIALLY_ELIGIBLE",amount=baseAmount,reduction=0;
   const explanations:string[]=[],missingEvidence=["Booking confirmation and operating carrier identity","Evidence of actual arrival time (door opening)","Airline's documented disruption reason and reasonable measures"];
   if(applies===false){status="NOT_COVERED";amount=0;explanations.push("This itinerary or ticket is outside the implemented EU/EEA scope. UK and Swiss passenger-rights regimes require separate assessment.");}

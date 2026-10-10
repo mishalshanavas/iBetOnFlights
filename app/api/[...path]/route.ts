@@ -81,7 +81,7 @@ function validateMutation(request:NextRequest){
 export async function POST(request:NextRequest,context:Context){
   try{
     validateMutation(request);if(Number(request.headers.get("content-length")||0)>32768)throw new ProviderError("TOO_LARGE","Request body too large.",413);
-    const p=(await context.params).path.join("/");let raw:unknown;try{raw=await request.json();}catch{throw new ProviderError("INVALID_JSON","Send a valid JSON request body.",400);}
+    const p=(await context.params).path.join("/");const body=await request.text();if(body.length>32768)throw new ProviderError("TOO_LARGE","Request body too large.",413);let raw:unknown;try{raw=JSON.parse(body);}catch{throw new ProviderError("INVALID_JSON","Send a valid JSON request body.",400);}
     if(p==="compensation/evaluate"){
       const input=assessmentInput.parse(raw),result=evaluateCompensation(input);const db=await getDb();
       const [saved]=await db.insert(t.assessments).values({flightId:input.flightNumber||null,assessedAt:now(),regulationVersion:result.regulationVersion,eligibilityStatus:result.status,potentialAmountEur:result.potentialAmount,knownDisruptionCause:input.reason,missingEvidenceJson:JSON.stringify(result.missingEvidence),explanation:result.explanation,inputJson:JSON.stringify(input),resultJson:JSON.stringify(result)}).returning({id:t.assessments.id});return send({...result,id:saved.id});

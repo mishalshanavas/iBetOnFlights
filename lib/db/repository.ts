@@ -19,15 +19,16 @@ export async function recordAircraft(data:AircraftResponse) {
   return db.transaction(async tx=>{
     await tx.insert(t.snapshots).values({region:data.region,observedAt:data.source.observedAt!,count:data.aircraft.length}).onConflictDoNothing();
     const [snapshot]=await tx.select().from(t.snapshots).where(and(eq(t.snapshots.region,data.region),eq(t.snapshots.observedAt,data.source.observedAt!)));
-    for(let i=0;i<data.aircraft.length;i+=80) {
-      const chunk=data.aircraft.slice(i,i+80);
+    for(let i=0;i<data.aircraft.length;i+=40) {
+      const chunk=data.aircraft.slice(i,i+40);
       await tx.insert(t.positions).values(chunk.map(a=>({snapshotId:snapshot.id,icao24:a.icao24,callsign:a.callsign,latitude:a.latitude,longitude:a.longitude,altitudeM:a.baroAltitude,groundSpeedMs:a.velocity,headingDeg:a.heading,verticalRateMs:a.verticalRate,onGround:a.onGround,observedAt:a.timePosition??a.lastContact,ingestedAt:now(),source:"OpenSky Network",data:JSON.stringify(a)}))).onConflictDoNothing();
-      for(const a of chunk) await tx.insert(t.aircraftTable).values({icao24:a.icao24,lastSeen:a.lastContact}).onConflictDoUpdate({target:t.aircraftTable.icao24,set:{lastSeen:a.lastContact}});
+      await tx.insert(t.aircraftTable).values(chunk.map(a=>({icao24:a.icao24,lastSeen:a.lastContact}))).onConflictDoUpdate({target:t.aircraftTable.icao24,set:{lastSeen:sql`excluded.lastSeen`}});
     }
     const cutoff=now()-Math.min(168,Math.max(1,Number(process.env.POSITION_RETENTION_HOURS)||48))*3600;
     const expired=await tx.select({id:t.snapshots.id}).from(t.snapshots).where(lt(t.snapshots.observedAt,cutoff));
     if(expired.length){await tx.delete(t.positions).where(inArray(t.positions.snapshotId,expired.map(s=>s.id)));await tx.delete(t.snapshots).where(lt(t.snapshots.observedAt,cutoff));}
     await tx.delete(t.cache).where(lt(t.cache.expiresAt,now()-3600));
+    await tx.insert(t.dataSources).values({id:"opensky",providerName:"OpenSky Network",sourceType:"surveillance",lastSuccessAt:now(),accessStatus:"recent"}).onConflictDoUpdate({target:t.dataSources.id,set:{lastSuccessAt:now(),accessStatus:"recent",message:null}});
     return snapshot.id;
   });
 }
@@ -58,6 +59,7 @@ export async function airportAnalytics(icao?:string) {
 }
 export async function recordWeather(w:WeatherResponse) {
   const db=await getDb();const p=w.current;
-  await db.insert(t.weather).values({airportIcao:w.airport,validAt:p.validAt,temperatureC:p.temperature,windSpeedMs:p.windSpeed,windDirection:p.windDirection,windGustMs:p.windGust,precipitationMm:p.precipitation,visibilityM:p.visibility,cloudCoverPct:p.cloudCover,pressureHpa:p.pressure,forecastIssuedAt:w.source.retrievedAt,ingestedAt:now(),source:"Open-Meteo forecast",data:JSON.stringify(p)}).onConflictDoNothing();
+  await db.insert(t.weather).values({airportIcao:w.airport,validAt:p.validAt,temperatureC:p.temperature,windSpeedMs:p.windSpeed,windDirection:p.windDirection,windGustMs:p.windGust,precipitationMm:p.precipitation,visibilityM:p.visibility,cloudCoverPct:p.cloudCover,pressureHpa:p.pressure,forecastIssuedAt:null,forecastRetrievedAt:w.source.retrievedAt,ingestedAt:now(),source:"Open-Meteo forecast",data:JSON.stringify(p)}).onConflictDoNothing();
   await db.delete(t.weather).where(lt(t.weather.ingestedAt,now()-7*86400));
+  await db.insert(t.dataSources).values({id:"open-meteo",providerName:"Open-Meteo",sourceType:"forecast",lastSuccessAt:now(),accessStatus:"recent"}).onConflictDoUpdate({target:t.dataSources.id,set:{lastSuccessAt:now(),accessStatus:"recent",message:null}});
 }

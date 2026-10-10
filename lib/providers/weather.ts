@@ -7,7 +7,10 @@ import { now, recordWeather } from "@/lib/db/repository";
 const variables="temperature_2m,relative_humidity_2m,precipitation,cloud_cover,wind_speed_10m,wind_direction_10m,wind_gusts_10m,weather_code,pressure_msl";
 export const nullableNumber=(v:unknown):number|null=>typeof v==="number"&&Number.isFinite(v)?v:null;
 export function weatherPoint(row:Record<string,unknown>,visibility:unknown=null):WeatherPoint {
-  return {validAt:`${row.time}Z`,temperature:nullableNumber(row.temperature_2m),humidity:nullableNumber(row.relative_humidity_2m),windSpeed:nullableNumber(row.wind_speed_10m),windDirection:nullableNumber(row.wind_direction_10m),windGust:nullableNumber(row.wind_gusts_10m),precipitation:nullableNumber(row.precipitation),cloudCover:nullableNumber(row.cloud_cover),pressure:nullableNumber(row.pressure_msl),visibility:nullableNumber(visibility),code:nullableNumber(row.weather_code)};
+  const time=z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?Z?$/).parse(row.time);
+  const validAt=time.endsWith("Z")?time:`${time}Z`;
+  if(!Number.isFinite(Date.parse(validAt)))throw new ProviderError("INVALID_WEATHER","The weather provider returned an invalid valid-time timestamp.",502);
+  return {validAt,temperature:nullableNumber(row.temperature_2m),humidity:nullableNumber(row.relative_humidity_2m),windSpeed:nullableNumber(row.wind_speed_10m),windDirection:nullableNumber(row.wind_direction_10m),windGust:nullableNumber(row.wind_gusts_10m),precipitation:nullableNumber(row.precipitation),cloudCover:nullableNumber(row.cloud_cover),pressure:nullableNumber(row.pressure_msl),visibility:nullableNumber(visibility),code:nullableNumber(row.weather_code)};
 }
 export const openMeteo:WeatherForecastProvider={async fetch(icao){
   const airport=findAirport(icao);if(!airport)throw new ProviderError("NOT_FOUND","Airport not found.",404);

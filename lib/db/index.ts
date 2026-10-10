@@ -17,6 +17,10 @@ async function initialize() {
   }
   if (url.startsWith("file:") && !url.includes(":memory:")) await mkdir(dirname(resolve(url.slice(5))),{recursive:true});
   const client = createClient({url,authToken:process.env.DATABASE_AUTH_TOKEN});
+  const columns=await client.execute("PRAGMA table_info(airport_weather)");
+  if(columns.rows.some(c=>c.name==="forecastIssuedAt")&&!columns.rows.some(c=>c.name==="forecastRetrievedAt")){
+    await client.executeMultiple(await readFile(resolve("drizzle/0001_weather_issuance.sql"),"utf8"));
+  }
   const sql = await readFile(resolve("drizzle/0000_initial.sql"),"utf8");
   await client.executeMultiple(sql);
   const db = drizzle(client,{schema});
