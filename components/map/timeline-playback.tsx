@@ -1,13 +1,12 @@
 "use client";
 import { useEffect,useState } from "react";
-import { useShallow } from "zustand/react/shallow";
 import { Play,Pause,SkipBack,SkipForward,Radio,CalendarDays,Info } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { api,useAircraft } from "@/hooks/use-data";
 import { useDashboard } from "@/stores/dashboard";
 import { formatTime } from "@/lib/utils";
 import type { Snapshot } from "@/lib/types";
-export function TimelinePlayback(){const s=useDashboard(useShallow(s=>({region:s.region,playing:s.playing,speed:s.speed,snapshotId:s.snapshotId,mode:s.mode,set:s.set}))),aircraft=useAircraft(),[date,setDate]=useState(()=>new Date().toISOString().slice(0,10)),[showInfo,setShowInfo]=useState(false);
+export function TimelinePlayback(){const s=useDashboard(),aircraft=useAircraft(),[date,setDate]=useState(()=>new Date().toISOString().slice(0,10)),[showInfo,setShowInfo]=useState(false);
   const history=useQuery<{snapshots:Snapshot[]}>({queryKey:["history",s.region,date],queryFn:()=>api(`/api/history?region=${s.region}&date=${date}`),refetchInterval:120000,retry:false});
   const frames=history.data?.snapshots||[],index=frames.findIndex(f=>f.id===s.snapshotId),current=frames[index];
   useEffect(()=>{if(!s.playing)return;if(!frames.length){s.set("playing",false);setShowInfo(true);return;}if(index<0){s.set("snapshotId",frames[0].id);return;}if(index>=frames.length-1){s.set("playing",false);return;}const delay=Math.max(250,(frames[index+1].observedAt-frames[index].observedAt)*1000/s.speed);const timer=setTimeout(()=>s.set("snapshotId",frames[index+1].id),delay);return()=>clearTimeout(timer);},[s.playing,s.speed,index,frames.length]);

@@ -18,10 +18,6 @@ The initial workspace uses **live mode**. If OpenSky is unavailable, the map sho
 
 ## What works
 
-The default **Simple** interface focuses on the map, aircraft, airports, weather, and compensation. Select **Advanced** in the header for the complete layer controls, measurement, recorded playback, analytics, predictions, and alerts. This preference is saved separately from Live/Demo traffic mode.
-
-The map engine loads in a separate browser chunk. Charts mount when scrolled into view; history, dialogs, and extra weather panels load when opened. Airport weather overlays request up to six airports in the map viewport, and aircraft lists keep a small window of rows in the DOM. Airport, flight-option, and assessment cards use an original boarding-pass layout with clearly labelled data sources.
-
 - Interactive MapLibre map with dark/light CARTO/OpenStreetMap basemaps, regional coverage boundaries, aircraft symbol layers, heading rotation, safe hover tooltips, selectable airports, and selectable aircraft.
 - Regional OpenSky queries, anonymous access or server-side OAuth2 client credentials, token caching, deduplicated requests, quota responses, retries, timeouts, 120-second default polling, and source timestamps. Positions older than five minutes are excluded from new collections.
 - Real Open-Meteo airport forecasts, weather features and a twelve-hour table. All forecast fields are labelled as modelled weather, rather than official METAR reports.
