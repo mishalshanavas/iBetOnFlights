@@ -1,0 +1,57 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: FlightGuard private prediction API (API Gateway HTTP API + Lambda)
+Parameters:
+  DatabaseUrl:
+    Type: String
+    Description: Hosted libSQL URL for the upcoming flight board
+  DatabaseAuthToken:
+    Type: String
+    NoEcho: true
+  PredictionApiToken:
+    Type: String
+    NoEcho: true
+    MinLength: 32
+Resources:
+  PredictionHttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      DefaultRouteSettings:
+        ThrottlingBurstLimit: 5
+        ThrottlingRateLimit: 2
+  PredictionFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../dist/lambda/
+      Handler: index.handler
+      Runtime: nodejs22.x
+      Architectures: [x86_64]
+      MemorySize: 512
+      Timeout: 20
+      Environment:
+        Variables:
+          DATABASE_URL: !Ref DatabaseUrl
+          DATABASE_AUTH_TOKEN: !Ref DatabaseAuthToken
+          PREDICTION_API_TOKEN: !Ref PredictionApiToken
+      Events:
+        Status:
+          Type: HttpApi
+          Properties: {ApiId: !Ref PredictionHttpApi, Path: /v1/status, Method: GET}
+        LegacyStatus:
+          Type: HttpApi
+          Properties: {ApiId: !Ref PredictionHttpApi, Path: /v1/model/status, Method: GET}
+        Flights:
+          Type: HttpApi
+          Properties: {ApiId: !Ref PredictionHttpApi, Path: /v1/flights, Method: GET}
+        Predict:
+          Type: HttpApi
+          Properties: {ApiId: !Ref PredictionHttpApi, Path: /v1/predictions, Method: POST}
+        Batch:
+          Type: HttpApi
+          Properties: {ApiId: !Ref PredictionHttpApi, Path: /v1/predictions/batch, Method: POST}
+        Context:
+          Type: HttpApi
+          Properties: {ApiId: !Ref PredictionHttpApi, Path: /v1/context, Method: POST}
+Outputs:
+  ApiUrl:
+    Value: !Sub https://${PredictionHttpApi}.execute-api.${AWS::Region}.amazonaws.com

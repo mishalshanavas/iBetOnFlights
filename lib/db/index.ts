@@ -23,6 +23,8 @@ async function initialize() {
   }
   const sql = await readFile(resolve("drizzle/0000_initial.sql"),"utf8");
   await client.executeMultiple(sql);
+  await client.executeMultiple(await readFile(resolve("drizzle/0001_prediction_evidence.sql"),"utf8"));
+  await client.executeMultiple(await readFile(resolve("drizzle/0002_published_punctuality.sql"),"utf8"));
   const db = drizzle(client,{schema});
   await db.insert(schema.airportsTable).values(airports.map(({country,...airport})=>{void country;return airport;})).onConflictDoNothing();
   return db;

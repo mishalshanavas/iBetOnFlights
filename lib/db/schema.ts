@@ -13,6 +13,18 @@ export const flights = sqliteTable("flights", {
   aircraftIcao24:text(),scheduledDeparture:integer().notNull(),scheduledArrival:integer().notNull(),actualDeparture:integer(),actualArrival:integer(),
   estimatedArrival:integer(),status:text().notNull(),source:text().notNull(),updatedAt:integer().notNull()
 },t=>[index("flight_route").on(t.originIcao,t.destinationIcao),index("flight_schedule").on(t.scheduledDeparture)]);
+export const flightPredictionEvidence = sqliteTable("flight_prediction_evidence", {
+  flightId:text("flight_id").primaryKey().notNull(),
+  scheduleObservedAt:integer("schedule_observed_at").notNull(),
+  labelObservedAt:integer("label_observed_at"),
+  arrivalTimeBasis:text("arrival_time_basis").notNull()
+});
+export const publishedPunctuality = sqliteTable("published_punctuality", {
+  id:text().primaryKey(),period:text().notNull(),reportingAirport:text("reporting_airport").notNull(),otherAirport:text("other_airport").notNull(),
+  airline:text().notNull(),direction:text().notNull(),matched:integer().notNull(),unmatched:integer().notNull(),cancelled:integer().notNull(),
+  late30:integer().notNull(),late60:integer().notNull(),late180:integer().notNull(),averageDelay:real("average_delay"),
+  sourceUrl:text("source_url").notNull(),sourceRunDate:text("source_run_date").notNull(),retrievedAt:integer("retrieved_at").notNull()
+});
 export const weather = sqliteTable("airport_weather", {
   id:integer().primaryKey({autoIncrement:true}),airportIcao:text().notNull(),validAt:text().notNull(),temperatureC:real(),windSpeedMs:real(),windDirection:real(),
   windGustMs:real(),precipitationMm:real(),visibilityM:real(),cloudCoverPct:real(),pressureHpa:real(),forecastIssuedAt:integer(),forecastRetrievedAt:integer().notNull(),ingestedAt:integer().notNull(),source:text().notNull(),data:text().notNull()

@@ -8,6 +8,7 @@
 | Basemap | [CARTO](https://carto.com/basemaps) / [OpenStreetMap](https://www.openstreetmap.org/copyright) | Base-map revision differs from aviation observation time. | Browser tile cache; attribution visible. |
 | Airport metadata | Curated WGS84 coordinates and identifiers | Static curated reference; not live operational status. | Local dataset. Confirm against authorized charts for aviation use. |
 | Commercial flights | Operator-imported authorized records | Schedule/actual fields as provided, with explicit source and updated time. | No live adapter configured. Surveillance identities never establish itineraries. |
+| Published UK-linked route history | [UK Civil Aviation Authority monthly punctuality CSVs](https://www.caa.co.uk/data-and-analysis/uk-aviation-market/flight-punctuality/uk-flight-punctuality-statistics/) | Reporting month, publisher run date as supplied, retrieval time, source URL. Aggregated matched-movement rates, not individual flight records. | Previous 12 complete calendar months, five-minute API cache, minimum 100 matched movements per route/airline/direction. Arrival and departure targets remain separate. CAA attribution required; statistical data must not be sold to third parties. |
 | Predictions | Operator-trained LightGBM | Exported model version, evaluation periods, inference time, input snapshot time. | Disabled without a compatible model. |
 | NOTAM, METAR, TAF, EUROCONTROL operations | No connected authorized provider | No observations available. | Explicitly unavailable; no restricted scraping. |
 

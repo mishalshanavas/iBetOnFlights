@@ -1,10 +1,12 @@
 node_modules/
 .next/
 out/
+dist/
 .env*
 !.env.example
 *.tsbuildinfo
 data/*.db*
+data/imports/
 ml/datasets/*
 !ml/datasets/.gitkeep
 ml/models/*

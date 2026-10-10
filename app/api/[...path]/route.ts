@@ -7,13 +7,15 @@ import { opensky,boundsSchema } from "@/lib/providers/opensky";
 import { openMeteo } from "@/lib/providers/weather";
 import { rainviewer } from "@/lib/providers/radar";
 import { notamProvider,metarProvider,eurocontrolProvider } from "@/lib/providers/optional";
-import { ProviderError,unsupportedSource } from "@/lib/providers/base";
+import { ProviderError,unsupportedSource,timedFetch } from "@/lib/providers/base";
 import { getDb } from "@/lib/db";
 import * as t from "@/lib/db/schema";
 import { now,getTrack,getSnapshots,getSnapshot,airportAnalytics } from "@/lib/db/repository";
 import { evaluateCompensation,assessmentInput } from "@/lib/compensation/engine";
 import { modelStatus,predict,predictionInput } from "@/lib/predictions/inference";
 import { evaluateWatchlists } from "@/lib/alerts/evaluate";
+import { predictRisk,predictRiskBatch,riskStatus,upcomingFlightPredictions } from "@/lib/predictions/schedule-service";
+import { itineraryContext } from "@/lib/predictions/weather-context";
 export const runtime="nodejs";
 export const maxDuration=30;
 export const dynamic="force-dynamic";
@@ -21,6 +23,14 @@ type Context={params:Promise<{path:string[]}>};
 const send=(value:unknown,status=200)=>NextResponse.json(value,{status});
 const identifier=z.string().regex(/^[a-f0-9]{6}$/i);
 const positiveId=z.coerce.number().int().positive();
+async function scheduleApi(path:string,method:"GET"|"POST",body?:unknown){
+  const base=process.env.PREDICTION_API_BASE_URL,token=process.env.PREDICTION_API_TOKEN;
+  if(!base)return null;
+  if(!token)throw new ProviderError("CONFIGURATION_ERROR","Prediction API token is not configured.",503);
+  const response=await timedFetch(new URL(path,base.endsWith("/")?base:`${base}/`).toString(),{method,headers:{Authorization:`Bearer ${token}`,...(method==="POST"?{"Content-Type":"application/json"}:{})},body:method==="POST"?JSON.stringify(body):undefined},15000);
+  const data=await response.json();
+  return send(data,response.status);
+}
 function regionId(value:string|null){const id=value||"central-europe";if(!(id in regions))throw new ProviderError("INVALID_REGION","Unknown coverage region.",400);return id as RegionId;}
 function fail(e:unknown){
   if(e instanceof z.ZodError)return send({error:{code:"INVALID_INPUT",message:e.issues.map(i=>`${i.path.join(".")}: ${i.message}`).join("; ")}},400);
@@ -53,6 +63,8 @@ export async function GET(request:NextRequest,context:Context){
     }
     if(path[0]==="flights"&&path[1]){const db=await getDb();const [flight]=await db.select().from(t.flights).where(eq(t.flights.id,path[1]));return flight?send({flight}):send({error:{message:"Verified flight not found."}},404);}
     if(p==="model/status")return send(await modelStatus());
+    if(p==="schedule/status"||p==="schedule/model/status")return await scheduleApi("v1/status","GET")||send(await riskStatus());
+    if(p==="schedule/flights")return await scheduleApi("v1/flights","GET")||send(await upcomingFlightPredictions(q.get("limit")||50));
     if(p==="analytics/airports")return send(await airportAnalytics(q.get("icao")||undefined));
     if(p==="analytics/routes"){
       const db=await getDb();const records=await db.select().from(t.flights).limit(10000);const labelled=records.filter(f=>f.actualArrival!==null);
@@ -64,7 +76,7 @@ export async function GET(request:NextRequest,context:Context){
     if(p==="compensation/history"){const db=await getDb();const records=await db.select().from(t.assessments).orderBy(desc(t.assessments.assessedAt)).limit(30);return send({assessments:records.map(r=>({id:r.id,assessedAt:r.assessedAt,result:JSON.parse(r.resultJson)}))});}
     if(p==="sources/status"){
       let database="connected";try{await getDb();}catch{database="unavailable";}
-      return send({database,sources:[{name:"OpenSky Network",status:process.env.OPENSKY_CLIENT_ID?"OAuth2 configured":"Anonymous · limited quota",detail:"120-second regional polling by default; position age shown on map"},{name:"Open-Meteo",status:"Available without key",detail:"Numerical forecast · 15-minute cache · not METAR"},{name:"RainViewer",status:process.env.RADAR_TILE_PROVIDER==="disabled"?"Disabled":"Available without key",detail:"Timestamped past radar frames; personal / educational use"},{name:"Official NOTAM",status:"Not connected",detail:"Requires authorized provider"},{name:"Flight status / schedules",status:"Import only",detail:"Surveillance positions do not provide verified itineraries"},{name:"EUROCONTROL",status:eurocontrolProvider.available?"Available":"Not connected",detail:eurocontrolProvider.message},{name:"LightGBM",status:(await modelStatus()).available?"Model loaded":"Model not trained",detail:"No fabricated predictions"}]});
+      return send({database,sources:[{name:"OpenSky Network",status:process.env.OPENSKY_CLIENT_ID?"OAuth2 configured":"Anonymous · limited quota",detail:"120-second regional polling by default; position age shown on map"},{name:"Open-Meteo",status:"Available without key",detail:"Numerical forecast · 15-minute cache · not METAR"},{name:"RainViewer",status:process.env.RADAR_TILE_PROVIDER==="disabled"?"Disabled":"Available without key",detail:"Timestamped past radar frames; personal / educational use"},{name:"Official NOTAM",status:"Not connected",detail:"Requires authorized provider"},{name:"Flight status / schedules",status:"Import only",detail:"Surveillance positions do not provide verified itineraries"},{name:"EUROCONTROL",status:eurocontrolProvider.available?"Available":"Not connected",detail:eurocontrolProvider.message},{name:"LightGBM",status:(await modelStatus()).available?"Model loaded":"Model not trained",detail:"No fabricated predictions"},{name:"Historical delay estimates",status:(await riskStatus()).available?"Sufficient sample":"Insufficient history",detail:"One-year sourced gate-arrival rates; no model artifact"}]});
     }
     return send({error:{code:"NOT_FOUND",message:"Endpoint not found."}},404);
   }catch(e){return fail(e);}
@@ -96,6 +108,9 @@ export async function POST(request:NextRequest,context:Context){
       const input=predictionInput.parse(raw),result=await predict(input.features);const db=await getDb();
       await db.insert(t.predictions).values({...result,flightId:input.flightId,featureSnapshotJson:JSON.stringify(input.features),sourceDataTimestamp:input.sourceDataTimestamp});return send(result);
     }
+    if(p==="schedule/predict")return await scheduleApi("v1/predictions","POST",raw)||send(await predictRisk(raw));
+    if(p==="schedule/predict/batch")return await scheduleApi("v1/predictions/batch","POST",raw)||send(await predictRiskBatch(raw));
+    if(p==="schedule/context")return await scheduleApi("v1/context","POST",raw)||send(await itineraryContext(raw));
     if(p.startsWith("alerts/")){const id=positiveId.parse(p.split("/")[1]);const db=await getDb();await db.update(t.alerts).set({acknowledgedAt:now()}).where(eq(t.alerts.id,id));return send({acknowledged:true});}
     return send({error:{message:"Endpoint not found."}},404);
   }catch(e){return fail(e);}

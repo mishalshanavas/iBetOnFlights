@@ -1,2 +1,2 @@
-import { PredictionWorkspace } from "@/components/predictions/prediction-workspace";
-export default function Page(){return <PredictionWorkspace/>;}
+import { ScheduleWorkspace } from "@/components/predictions/schedule-workspace";
+export default function Page(){return <ScheduleWorkspace/>;}

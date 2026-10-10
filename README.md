@@ -41,7 +41,7 @@ The initial workspace uses **live mode**. If OpenSky is unavailable, the map sho
 | Official NOTAM / EUROCONTROL | No authorized integration connected | Provider interfaces and explicit unavailable states; no restricted-service scraping. |
 | Official METAR/TAF | Not connected | Separate abstraction; forecast fields are never represented as official observations. |
 | Commercial flight status | No live provider connected | Import sourced records using `npm run data:import -- records.json`; API key variable reserved for a future authorized adapter. |
-| Delay predictions | No pretrained model shipped | Supply genuine labelled records, run the offline pipeline, and place `model.json` under `ml/models/`. |
+| Delay estimates | No model or API key needed | Import sourced, timestamped gate-arrival records. At least 1,000 flights and 10 severe delays are required before rates appear. Optional offline model research is separate. |
 
 No validated European prediction model, official NOTAM feed, or verified live commercial itinerary is bundled. Their unavailable states are intentional. The system does not derive schedules, airline responsibility, runway closures, or cancellation causes from surveillance data.
 
@@ -66,7 +66,43 @@ Optional research output is local; deployed persistence must use Turso. Detailed
 
 Manual comparison candidates and ticket prices are saved only to browser localStorage, labelled **manually entered**, and kept separate from imported schedules. No ticket prices are generated.
 
-## Train a real delay model
+## Historical delay estimates and AWS Lambda API
+
+The `/predictions` screen uses historical rates calculated directly in the API. For individual gate-arrival records it needs at least 1,000 labelled flights and 10 severe delays; smaller route groups are pulled toward the overall sample. When that history is insufficient, the API can return official UK CAA published route-and-airline punctuality for covered UK-linked routes with at least 100 matched movements. The response identifies its method, arrival/departure direction, target, thresholds, reporting months, sample, source URLs, and limitations. These are historical rates, not calibrated individual-flight forecasts or compensation eligibility. The older `/api/predict` weather-feature endpoint remains separate.
+
+To fetch public CAA history and import it into the database configured in ignored `.env.local`:
+
+```bash
+python3 scripts/import-caa.py
+```
+
+The importer discovers monthly Arrival/Departure CSVs on the official CAA pages for the previous 12 complete calendar months, maps only known airports, and retains scheduled services. It reconstructs integer delay-band counts from six-decimal published percentages using **matched + unmatched + cancelled movements** as the original denominator, validates reconciliation, and stores aggregates separately in `published_punctuality`. Displayed delay rates then divide those counts by matched operated movements; cancellation rates use all three categories. Raw downloads and a provenance manifest stay in ignored `data/imports/caa/`. Reimporting the same cohort updates it without duplication. Use `--dry-run` to download and validate without database writes.
+
+CAA rates use **strictly more than 30, 60, and 180 minutes**, not the individual-record API's greater-than-or-equal thresholds. A UK destination uses arrival punctuality at that airport; otherwise a supported UK origin uses departure punctuality. No global CAA fallback is used for an unsupported route or airline. CAA carrier codes and selected aliases are accepted; the UI lists published airline names and covered route history. [CAA methodology](https://www.caa.co.uk/data-and-analysis/uk-aviation-market/flight-punctuality/uk-flight-punctuality-statistics-notes/) permits changes to planned times up to 30 minutes before operation and estimated taxi times when gate times are missing, so these aggregates do not establish booking-time predictability. [CAA publication terms](https://www.caa.co.uk/data-and-analysis/uk-aviation-market/flight-punctuality/uk-flight-punctuality-statistics/2026/) require attribution and prohibit selling their statistical data to third parties. Published movement totals may count a UK domestic flight at both reporting airports. Individual flights and upcoming schedules are never synthesized from monthly totals.
+
+Import sourced flight records with a `predictionEvidence` object when the source provides a timestamped schedule. Example (timestamps are Unix seconds):
+
+```json
+[{"id":"source-flight-id","flightNumber":"XY123","operatingAirline":"Operating carrier name","originIcao":"EHAM","destinationIcao":"EDDF","scheduledDeparture":1800000000,"scheduledArrival":1800007200,"actualArrival":1800009000,"status":"arrived","source":"Your licensed source","updatedAt":1800010000,"predictionEvidence":{"scheduleObservedAt":1799900000,"labelObservedAt":1800010000,"arrivalTimeBasis":"gate"}}]
+```
+
+The importer validates structure and timestamp order; **you must verify the source and rights to use it**. Reimporting a flight without `predictionEvidence` clears its old evidence so a changed schedule cannot inherit a stale proof. The Lambda computes rates from eligible records directly; no training job or model artifact is required:
+
+```bash
+npm run data:import -- flights.json
+```
+
+Only flights whose schedule was observed at least one hour before departure, whose actual arrival is labelled as gate arrival, and whose label became available before the estimate are counted. The API excludes cancellations and diversions from this arrival-delay target. Estimates require at least one hour before departure and use only the route and operating airline from the requested schedule. It cannot infer the eventual aircraft or disruption cause.
+
+Next.js exposes `GET /api/schedule/status`, `GET /api/schedule/flights?limit=50`, `POST /api/schedule/predict`, `POST /api/schedule/predict/batch`, and `POST /api/schedule/context`. The batch body is `{ "flights": [<schedule input>, ...] }` (maximum 100); each result includes either a prediction or a reason it is unavailable. A schedule input contains `origin`, `destination`, `operatingAirline`, `scheduledDeparture`, and `scheduledArrival` in Unix seconds. The context body is `{ "itinerary": <schedule input>, "thresholds": { "gustMs": 18, "precipitationMm": 3 } }`. Context returns the historical estimate when supported, plus time-matched Open-Meteo departure and arrival forecasts. User thresholds flag forecast conditions; they do **not** alter the historical percentage. Weather can still appear when the historical sample is insufficient. Forecasts beyond the 48-hour assessment window are marked unavailable.
+
+For a private AWS API, run `npm run lambda:package`, then deploy `aws/template.yaml` with AWS SAM. It provisions API Gateway HTTP API and Node.js 22 Lambda with `GET /v1/status`, `GET /v1/flights`, `POST /v1/predictions`, `POST /v1/predictions/batch`, and `POST /v1/context`. Supply a hosted libSQL URL, its auth token, and a random `PredictionApiToken` (at least 32 characters) as SAM parameters. Requests require `Authorization: Bearer <token>`. Keep that token on the server: setting `PREDICTION_API_BASE_URL` and `PREDICTION_API_TOKEN` in the Next.js server makes the existing UI routes proxy to Lambda. Do not put it in a `NEXT_PUBLIC_` variable. Lambda packaging includes SQL migrations and scoring code. Deploy only after the database and API token are ready. Unsupported cohorts return insufficient history; the API does not invent percentages. Status reports individual gate-arrival records and published aggregates separately. The flight board includes `publishedRoutes`, a separate historical-cohort list; it never presents that list as upcoming flights.
+
+The board examines upcoming imported schedules; it does not collect or purchase live flight-status data. A licensed ingestion feed or recurring import is still needed for a continuously populated board. [EUROCONTROL DDR historical traffic and its API require approved access](https://www.eurocontrol.int/ddr); the API is restricted to ANSPs. [EAD Basic](https://www.ead.eurocontrol.int/cms-eadbasic/opencms/en/ead-solutions/ead-basic/) exposes limited NOTAM information, not flight-level scheduled and actual gate-arrival labels. No EUROCONTROL/NOTAM scraper is included. [Open-Meteo's free API is for non-commercial use](https://open-meteo.com/en/terms); arrange suitable terms before a commercial launch.
+
+To deploy with AWS CLI without installing SAM CLI, log in with `aws login`, put `DATABASE_URL` and `DATABASE_AUTH_TOKEN` in ignored `.env.local`, then run `python3 scripts/deploy-predictions.py`. The script packages the Lambda, creates a private S3 artifact bucket and the CloudFormation stack in `ap-south-1`, generates an API token when absent, and saves the deployed URL and token to `.env.local`. Set `PREDICTION_AWS_REGION` to override the region. Restart Next.js after deployment. API Gateway throttles requests to two per second with a burst of five. Packaging uses the hosted libSQL client to avoid native SQLite dependencies in Lambda.
+
+## Optional offline delay model research
 
 ```powershell
 python -m venv .venv

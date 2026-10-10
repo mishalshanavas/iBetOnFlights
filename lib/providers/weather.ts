@@ -16,7 +16,7 @@ export const openMeteo:WeatherForecastProvider={async fetch(icao){
   const airport=findAirport(icao);if(!airport)throw new ProviderError("NOT_FOUND","Airport not found.",404);
   const result=await cached<WeatherResponse>(`weather:${airport.icao}`,900,async()=>{
     const url=new URL("https://api.open-meteo.com/v1/forecast");
-    for(const [key,value] of Object.entries({latitude:airport.latitude,longitude:airport.longitude,current:variables,hourly:`${variables},visibility`,wind_speed_unit:"ms",timezone:"UTC",forecast_days:2}))url.searchParams.set(key,String(value));
+    for(const [key,value] of Object.entries({latitude:airport.latitude,longitude:airport.longitude,current:variables,hourly:`${variables},visibility`,wind_speed_unit:"ms",timezone:"UTC",forecast_days:3}))url.searchParams.set(key,String(value));
     const response=await timedFetch(url.toString());
     if(!response.ok)throw new ProviderError("WEATHER_UNAVAILABLE",`Open-Meteo returned HTTP ${response.status}.`,502);
     const raw=z.object({current:z.record(z.string(),z.unknown()),hourly:z.record(z.string(),z.array(z.unknown()))}).parse(await response.json());
