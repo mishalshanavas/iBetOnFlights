@@ -50,11 +50,14 @@ export async function getTrack(id:string) {
 export async function airportAnalytics(icao?:string) {
   const db=await getDb();const recent=await db.select().from(t.snapshots).orderBy(desc(t.snapshots.observedAt)).limit(180);
   const selected=icao?findAirport(icao):null;
-  const points=[];
-  for(const s of [...recent].reverse()) {
-    const rows=await db.select({latitude:t.positions.latitude,longitude:t.positions.longitude}).from(t.positions).where(eq(t.positions.snapshotId,s.id));
-    points.push({time:s.observedAt,count:selected?rows.filter(p=>distanceKm(selected.latitude,selected.longitude,p.latitude,p.longitude)<=75).length:s.count,region:s.region});
+  const counts=new Map<number,number>();
+  if(selected&&recent.length){
+    // One bounded query replaces a query for every historical snapshot.
+    const latDelta=80/110,lonDelta=80/(110*Math.max(0.1,Math.cos(selected.latitude*Math.PI/180)));
+    const rows=await db.select({snapshotId:t.positions.snapshotId,latitude:t.positions.latitude,longitude:t.positions.longitude}).from(t.positions).where(and(inArray(t.positions.snapshotId,recent.map(s=>s.id)),sql`${t.positions.latitude} BETWEEN ${selected.latitude-latDelta} AND ${selected.latitude+latDelta}`,sql`${t.positions.longitude} BETWEEN ${selected.longitude-lonDelta} AND ${selected.longitude+lonDelta}`));
+    for(const p of rows)if(distanceKm(selected.latitude,selected.longitude,p.latitude,p.longitude)<=75)counts.set(p.snapshotId,(counts.get(p.snapshotId)||0)+1);
   }
+  const points=[...recent].reverse().map(s=>({time:s.observedAt,count:selected?counts.get(s.id)||0:s.count,region:s.region}));
   return {points,sampleSize:points.length,source:"Recorded OpenSky observations",coverage:icao||"Selected collection regions",definition:selected?"Aircraft observed within 75 km; proximity does not establish arrival intent.":"Retrieved aircraft per regional snapshot; not total European flights.",airports:europeanAirports};
 }
 export async function recordWeather(w:WeatherResponse) {

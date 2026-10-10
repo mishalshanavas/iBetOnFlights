@@ -1,0 +1,141 @@
+:root{--ticket-paper:#eeefeb;--ticket-ink:#161719;--ticket-blue:#4333ff}
+.interface-switch{display:flex;align-items:center;gap:2px;border:1px solid #3b3e45;padding:3px;border-radius:5px;background:#111317}
+.interface-switch button{display:flex;align-items:center;gap:5px;padding:6px 9px;border-radius:3px;font-size:10px;color:#9097a3;white-space:nowrap}
+.interface-switch button[aria-pressed=true]{background:var(--ticket-paper);color:var(--ticket-ink)}
+.interface-switch button:last-child[aria-pressed=true]{background:var(--ticket-blue);color:#fff}
+.map-starting{position:absolute;inset:0 0 72px;display:flex;gap:10px;align-items:center;justify-content:center;color:#b8c3d7;background:#10151b;font:11px var(--mono);pointer-events:none}
+.map-starting svg{color:#8a94ff;width:19px}
+.section-placeholder{display:grid;place-items:center;color:#7f8898;font:10px var(--mono);background:#ffffff03;border:1px dashed #ffffff15;border-radius:4px}
+.section-placeholder span{width:60%;height:5px;background:#ffffff0b;border-radius:3px}
+.virtual-list{height:min(52vh,480px);min-height:180px;overflow:auto;contain:layout paint;overscroll-behavior:contain}
+.virtual-list .aircraft-list-row{height:100%;margin:0}
+.map-simple .aviation-map{bottom:34px}
+.map-simple .operations-sidebar{bottom:52px}
+.map-simple .map-controls{top:76px}
+.simple-map-footer{position:absolute;bottom:0;left:0;right:0;height:34px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;border-top:1px solid #343b43;background:#14171c;font:8px var(--mono);color:#949ba7;letter-spacing:.3px}
+.simple-map-footer>span:first-child{display:flex;align-items:center;gap:7px}
+.simple-map-footer svg{color:#9388ff}
+.operations-sidebar{border:1px solid #45494e;box-shadow:0 5px 20px #0004;border-radius:8px}
+.sidebar-top-tabs{background:#15181c}
+.sidebar-top-tabs button.active{background:#4433ff22;color:#b3acff}
+.sidebar-top-tabs button.active svg{color:#b3acff}
+.ticket-header{background:var(--ticket-paper);color:var(--ticket-ink);position:relative;isolation:isolate;flex-shrink:0}
+.airport-profile-header{padding:14px 18px 0}
+.ticket-header:after{content:"";position:absolute;right:14px;top:86px;bottom:54px;width:16px;background:repeating-linear-gradient(to bottom,#161719 0px,#161719 2px,transparent 2px,transparent 4px,#161719 4px,#161719 5px,transparent 5px,transparent 8px);opacity:.7;pointer-events:none}
+.ticket-kicker{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;border-bottom:1px solid #16171925;padding-bottom:7px;font:7px var(--mono);letter-spacing:.8px;color:#72736e}
+.ticket-kicker small{font-size:7px;color:#72736e}
+.ticket-header .back-link{color:#65665f;font-size:9px;margin:0 0 14px}
+.airport-profile-code{padding-right:25px}
+.airport-profile-code h1{font-family:'Inter Variable',Arial,sans-serif;font-weight:450;font-size:46px;letter-spacing:-2.5px;display:flex;align-items:baseline;gap:12px;margin:0;line-height:1.1}
+.airport-profile-code h1 .ticket-icao{font-size:28px;color:#161719;font-weight:450;letter-spacing:-1.4px}
+.airport-profile-code h1>span:not(.ticket-icao){font-size:25px;color:#81847a;letter-spacing:0;font-weight:300}
+.airport-profile-code h1 strong{font-weight:450}
+.ticket-header .icon-button{color:#161719}
+.ticket-header .icon-button:hover{background:#16171910}
+.airport-profile-name{font-size:12px;font-weight:500;color:#161719;margin-top:10px;padding-right:30px}
+.airport-profile-location{margin-top:5px;font-size:9px;color:#62665d;padding-right:30px}
+.ticket-header .status-pill{color:#6a6d64;background:#16171908;border:1px solid #16171920;font-size:6px}
+.ticket-header .coordinate-line{color:#6a6d64;font:7px var(--mono);padding-right:26px;margin-top:12px}
+.airport-time-row{border-top:1px solid #16171920;padding-top:9px;gap:9px;font-size:8px;color:#4e534a;margin-top:10px;padding-right:26px}
+.airport-time-row>span:last-child{display:none}
+.airport-actions{padding-right:24px;margin-top:12px;gap:5px;margin-bottom:0}
+.airport-actions button{color:#24271f;background:transparent;border:1px solid #17191930;font-size:9px;padding:6px 9px;border-radius:3px}
+.airport-actions button:hover{background:#17191910}
+.ticket-band{background:var(--ticket-blue);display:flex;justify-content:space-between;gap:10px;padding:7px 18px;margin:14px -18px 0;font:7px var(--mono);letter-spacing:.5px;color:#fff}
+.airport-profile-tabs{position:relative;flex-shrink:0;background:#17191e;border-top:1px dashed #adaca866;border-bottom:1px solid #3b3e45;padding-top:4px;padding-bottom:4px}
+.airport-profile-tabs:before,.airport-profile-tabs:after{content:"";position:absolute;top:-7px;width:13px;height:13px;border-radius:50%;background:#0f1216;z-index:2}
+.airport-profile-tabs:before{left:-7px}.airport-profile-tabs:after{right:-7px}
+.airport-profile-tabs button{font-size:9px;padding:11px 12px}
+.airport-profile-tabs button.active{color:#b3acff}
+.airport-profile-tabs button.active:after{background:var(--ticket-blue)}
+.sidebar-footer{border-top:1px dashed #b2b4be30;background:#15181d;letter-spacing:.6px}
+.sidebar-footer .tiny-dot{background:#8477ff}
+.aircraft-profile-header{padding:14px 18px 16px}
+.aircraft-profile-identity h1{color:#161719;font-size:25px;letter-spacing:-1px}
+.aircraft-profile-identity>div>span{color:#5e6258;font-size:7px}
+.aircraft-identity-icon{background:var(--ticket-blue);border:0;color:#fff;width:42px;height:42px}
+.aircraft-profile-header:after{display:none}
+.aircraft-profile-header .source-footnote{color:#61645b;border-top:1px dashed #16171940;padding-top:12px;margin-top:16px}
+.airport-status-grid,.telemetry-grid{border:1px solid #39414d;border-radius:5px;position:relative;overflow:hidden}
+.airport-status-grid>div+div,.telemetry-grid>div:nth-child(2n){border-left:1px dashed #69708060}
+.weather-summary{border-bottom:1px dashed #777f8e50}
+.ticket-statistics{background:#171b21;border-color:#484b5266;backdrop-filter:none;box-shadow:0 3px 10px #0002}
+.ticket-statistics .stat-item{border-right-style:dashed}
+.map-simple .ticket-statistics{height:68px;padding:14px 2px}
+.map-simple .ticket-statistics .stat-item:first-child{min-width:165px}
+.map-simple .ticket-statistics .stat-item:last-child{min-width:115px}
+.map-simple .ticket-statistics .stat-item:first-child>strong{font-size:26px}
+.map-simple .map-area-label{top:28px;font-size:8px}
+.map-controls,.weather-widget{backdrop-filter:none}
+.weather-widget{position:relative;border-radius:5px;border:1px solid #555b65;border-left:3px solid var(--ticket-blue)}
+.widget-bottom{border-top:1px dashed #7f859444;padding-top:8px}
+.map-controls{box-shadow:0 3px 12px #0002}
+.directory-airport{position:relative;overflow:hidden;background:var(--ticket-paper);color:var(--ticket-ink);padding:18px 80px 15px 18px;border-radius:6px;border:0;min-height:180px;text-align:left}
+.directory-airport:hover{background:#fff;box-shadow:0 3px 12px #0002}
+.directory-airport:before{content:"";position:absolute;top:0;bottom:0;right:62px;border-left:1px dashed #17191945}
+.directory-airport:after{content:"";position:absolute;right:20px;top:25px;width:24px;height:110px;background:repeating-linear-gradient(to bottom,#161719 0px,#161719 2px,transparent 2px,transparent 4px,#161719 4px,#161719 5px,transparent 5px,transparent 8px)}
+.directory-airport-top{color:#161719;align-items:baseline;gap:10px;margin-bottom:18px}
+.directory-airport-top>svg:first-child{display:none}
+.directory-airport-top strong{font-size:15px;font-weight:500;letter-spacing:-.5px;color:#61645b}
+.directory-airport-top>span{font:450 44px/1 'Inter Variable',Arial,sans-serif;letter-spacing:-2px;color:#161719}
+.directory-airport-top>svg:last-child{position:absolute;right:27px;bottom:18px;color:var(--ticket-blue)}
+.directory-airport h2{font-size:11px;color:#161719;font-weight:600}
+.directory-airport p{color:#64685f;font-size:9px}
+.directory-airport-bottom{border-top:1px solid #17191925;padding-top:10px;color:#5b6056;gap:8px;font-size:7px}
+.directory-airport-bottom:after{content:"";height:5px;background:var(--ticket-blue);position:absolute;left:0;bottom:0;right:62px}
+.workspace-panel{position:relative;border-radius:7px;overflow:visible;box-shadow:none}
+.workspace-panel>.panel-heading{border-bottom:1px dashed #858b9750}
+.workspace-panel:before,.workspace-panel:after{content:"";position:absolute;top:45px;width:11px;height:11px;border-radius:50%;background:var(--bg);border:1px solid var(--border);z-index:1;pointer-events:none}
+.workspace-panel:before{left:-6px}.workspace-panel:after{right:-6px}
+.page-metric-strip{border-radius:5px;border-top:3px solid var(--ticket-blue)}
+.page-metric-strip>div{border-right-style:dashed}
+.compensation-journey{border-radius:5px;border-bottom:1px dashed #9ca4b355}
+.flight-ticket-list{display:grid;gap:14px;padding:0 20px 20px}
+.flight-ticket{display:grid;grid-template-columns:minmax(0,1fr) 125px;background:var(--ticket-paper);color:var(--ticket-ink);border-radius:7px;position:relative;isolation:isolate;overflow:hidden}
+.flight-ticket-main{min-width:0}
+.flight-ticket-caption{display:flex;justify-content:space-between;gap:12px;margin:15px 19px 0;padding-bottom:9px;border-bottom:1px solid #17191925;font:7px var(--mono);letter-spacing:.6px;color:#686d64}
+.flight-ticket-caption>span:last-child{font-size:6px;text-align:right}
+.flight-ticket-route{display:flex;align-items:center;gap:25px;padding:18px 19px}
+.flight-ticket-route>div{flex:1;min-width:0}
+.flight-ticket-route small{display:block;font:7px var(--mono);color:#696d65;letter-spacing:.6px;margin-bottom:5px}
+.flight-ticket-route strong{font:450 48px/1 'Inter Variable',Arial,sans-serif;letter-spacing:-2.5px}
+.flight-ticket-route span{display:block;font:8px var(--mono);color:#555b51;text-transform:uppercase;margin-top:6px}
+.flight-ticket-route>svg{flex-shrink:0;color:#373b33}
+.flight-ticket-details{display:flex;gap:20px;padding:0 19px 18px}
+.flight-ticket-details>div{flex:1;min-width:0}
+.flight-ticket-details span{display:block;font:7px var(--mono);letter-spacing:.3px;color:#656b60}
+.flight-ticket-details strong{display:block;font-size:16px;font-weight:500;letter-spacing:-.5px;margin-top:5px;overflow-wrap:anywhere}
+.flight-ticket-details small{display:block;font-size:8px;color:#676c62;margin-top:4px;overflow-wrap:anywhere}
+.flight-ticket-strip{height:25px;display:flex;align-items:center;gap:8px;padding:0 19px;background:var(--ticket-blue);color:#fff;font:6px var(--mono);letter-spacing:.5px}
+.flight-ticket-strip>span:last-child{margin-left:auto}
+.flight-ticket-stub{position:relative;border-left:1px dashed #17191945;padding:17px 14px;display:flex;flex-direction:column;align-items:flex-start;gap:9px;background:#dfe3dd}
+.flight-ticket-stub:before,.flight-ticket-stub:after{content:"";position:absolute;left:-8px;width:15px;height:15px;background:var(--panel);border-radius:50%}
+.flight-ticket-stub:before{top:-8px}.flight-ticket-stub:after{bottom:-8px}
+.flight-ticket-stub>svg{color:var(--ticket-blue);margin-bottom:8px}
+.flight-ticket-stub>span{font:7px var(--mono);color:#62685d;letter-spacing:.4px}
+.flight-ticket-stub>strong{font-size:21px;font-weight:500;letter-spacing:-.8px;overflow-wrap:anywhere;max-width:100%}
+.flight-ticket-stub>small{font-size:8px;color:#656c60;line-height:1.5}
+.ticket-barcode{height:30px;width:100%;margin-top:auto;background:repeating-linear-gradient(to right,#171919 0,#171919 1px,transparent 1px,transparent 3px,#171919 3px,#171919 5px,transparent 5px,transparent 7px)}
+.flight-ticket-stub .icon-button{color:#50574a;align-self:flex-end;width:22px;height:22px}
+.ticket-comparison-note{font:8px var(--mono);color:var(--muted);margin:0}
+.assessment-ticket{padding:16px 16px 0}
+.assessment-ticket .flight-ticket{grid-template-columns:minmax(0,1fr) 105px}
+.assessment-ticket .flight-ticket-caption{margin:12px 14px 0}
+.assessment-ticket .flight-ticket-route{padding:15px 14px;gap:12px}
+.assessment-ticket .flight-ticket-route strong{font-size:38px}
+.assessment-ticket .flight-ticket-details{padding:0 14px 15px;gap:12px}
+.assessment-ticket .flight-ticket-details strong{font-size:13px}
+.assessment-ticket .flight-ticket-stub{padding:14px 11px}
+.assessment-ticket .flight-ticket-stub>strong{font-size:18px}
+.assessment-ticket .flight-ticket-strip{padding:0 14px;font-size:5px}
+.checkbox-field{flex-direction:row;justify-content:flex-start}
+.checkbox-field input[type="checkbox"]{width:13px!important;height:13px!important;min-width:13px;min-height:13px;flex:0 0 13px;padding:0!important;margin:0;accent-color:var(--ticket-blue)}
+.checkbox-field.form-field>span{display:flex;align-items:center;justify-content:flex-start;gap:8px}
+.ticket-statistics{border-left:3px solid var(--ticket-blue)}
+.airport-status-grid{border-style:dashed}
+@media(max-width:800px){.flight-ticket-list{padding:0 12px 15px}.flight-ticket{grid-template-columns:minmax(0,1fr) 92px}.flight-ticket-route{gap:12px;padding:15px 13px}.flight-ticket-route strong{font-size:38px}.flight-ticket-caption{margin:13px 13px 0;font-size:6px}.flight-ticket-details{padding:0 13px 15px;gap:12px}.flight-ticket-details strong{font-size:13px}.flight-ticket-stub{padding:14px 10px}.flight-ticket-stub>strong{font-size:17px}.flight-ticket-strip{padding:0 13px;font-size:5px}.flight-ticket-stub>span{font-size:6px}.assessment-ticket{padding:12px 10px 0}.assessment-ticket .flight-ticket{grid-template-columns:minmax(0,1fr) 82px}.assessment-ticket .flight-ticket-route strong{font-size:32px}.assessment-ticket .flight-ticket-route>svg{width:20px}.assessment-ticket .flight-ticket-caption>span:last-child{max-width:70px}.assessment-ticket .flight-ticket-stub>strong{font-size:16px}.assessment-ticket .flight-ticket-details strong{font-size:12px}}
+@media(min-width:1800px){.airport-profile-header{padding:18px 20px 0}.ticket-band{margin-left:-20px;margin-right:-20px;padding-left:20px;padding-right:20px}}
+@media(max-width:1350px){.topbar{gap:9px}.topbar-actions{gap:7px}.interface-switch button{padding:5px 7px;font-size:9px}.ui-advanced .main-nav a{padding:0 7px;font-size:9px}.ui-advanced .clock{display:none}}
+@media(max-width:1100px){.map-simple .map-statistics{width:auto;min-width:0}.map-simple .map-area-label{display:none}.map-simple .ticket-statistics .stat-item:first-child{min-width:140px}.map-simple .ticket-statistics .stat-item:last-child{min-width:94px}.ui-advanced .brand small{display:none}.ui-advanced .top-search{display:none}}
+@media(max-width:800px){.topbar{flex-wrap:wrap;height:auto;min-height:84px;padding:8px 12px;gap:4px 12px;align-content:center}.brand{order:0}.topbar-actions{order:1;margin-left:auto;gap:7px}.main-nav{order:2;flex:0 0 100%;height:30px;margin:0;justify-content:flex-start}.main-nav a{height:30px;flex-shrink:0;padding:0 11px;font-size:10px}.interface-switch button{padding:5px 7px;font-size:9px}.topbar-actions .top-search{display:flex;padding:5px}.top-search kbd,.top-search>span{display:none}.ui-advanced .topbar-actions .top-search{display:flex}.map-simple .operations-sidebar{bottom:44px}.map-simple .aviation-map{bottom:28px}.simple-map-footer{height:28px;font-size:6px;padding:0 10px}.simple-map-footer>span:last-child{display:none}.map-simple .map-statistics{right:55px!important;height:58px}.map-simple .ticket-statistics .stat-item:first-child{flex:1;min-width:0}.map-simple .ticket-statistics .stat-item:last-child{min-width:80px}.map-simple .map-controls{top:55px}.ticket-header:after{right:12px;width:12px;top:79px;bottom:49px}.airport-profile-code h1{font-size:42px}.airport-profile-code h1 .ticket-icao{font-size:25px}.airport-profile-header{padding:12px 15px 0}.ticket-band{margin-left:-15px;margin-right:-15px;padding-left:15px;padding-right:15px;font-size:6px}.airport-actions{padding-right:19px}.airport-actions button{padding:6px 7px;font-size:8px}.airport-profile-name{font-size:11px}.airport-profile-location .status-pill{display:none}.airport-time-row{font-size:7px;gap:6px}.ticket-kicker{font-size:6px;margin-bottom:8px}.ticket-kicker small{font-size:6px}.coordinate-line{flex-wrap:wrap;gap:4px}.virtual-list{height:42vh}.workspace-panel:before,.workspace-panel:after{display:none}}
+@media(prefers-reduced-motion:reduce){.map-starting svg{animation:none}}
