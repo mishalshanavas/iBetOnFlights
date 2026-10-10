@@ -6,7 +6,7 @@ import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import * as t from "@/lib/db/schema";
-import { recordAircraft,getSnapshots,getSnapshot,getTrack,now } from "@/lib/db/repository";
+import { recordAircraft,getSnapshots,getSnapshot,getTrack,airportAnalytics,now } from "@/lib/db/repository";
 import { demoAircraft } from "@/data/demo";
 import { clearRiskHistoryCache,predictRisk,riskStatus,upcomingFlightPredictions } from "@/lib/predictions/schedule-service";
 import { itineraryContext } from "@/lib/predictions/weather-context";
@@ -17,6 +17,15 @@ const testFile=join(tmpdir(),`flightguard-test-${randomUUID()}.db`);
 beforeAll(()=>{process.env.DATABASE_URL=`file:${testFile.replace(/\\/g,"/")}`;});
 afterAll(async()=>{(await getDb()).$client.close();try{await rm(testFile,{force:true});}catch{/* Windows may retain the native SQLite handle until the isolated test worker exits. */}});
 describe("SQLite persistence",()=>{
+  it("keeps nearby counts and chronological ordering when history is fetched together",async()=>{
+    const at=now()-60,fixture=demoAircraft("british-isles")[0];
+    const near={...fixture,icao24:"test01",latitude:51.47,longitude:-0.46,timePosition:at,lastContact:at};
+    const far={...fixture,icao24:"test02",latitude:48.85,longitude:2.35,timePosition:at,lastContact:at};
+    for(const [offset,aircraft] of [[0,[near,far]],[10,[far]]] as const)await recordAircraft({aircraft:[...aircraft],region:"british-isles",pollSeconds:120,quotaRemaining:null,source:{provider:"test fixture",status:"recent",observedAt:at+offset,retrievedAt:at+offset}});
+    const result=await airportAnalytics("EGLL");
+    expect(result.points.filter(p=>p.time===at||p.time===at+10).map(p=>({time:p.time,count:p.count}))).toEqual([{time:at,count:1},{time:at+10,count:0}]);
+    const all=await airportAnalytics();expect(all.points.find(p=>p.time===at)?.count).toBe(2);
+  });
   it("migrates and seeds airport metadata",async()=>{const db=await getDb();const rows=await db.select().from(t.airportsTable);expect(rows.length).toBeGreaterThanOrEqual(22);});
   it("deduplicates snapshots and preserves aircraft observations",async()=>{const a=demoAircraft("benelux")[0];a.timePosition=now();a.lastContact=now();const data:AircraftResponse={aircraft:[a],region:"benelux",pollSeconds:120,quotaRemaining:null,source:{provider:"test fixture",status:"recent",observedAt:now(),retrievedAt:now()}};const id=await recordAircraft(data);expect(await recordAircraft(data)).toBe(id);const history=await getSnapshots("benelux");expect(history).toHaveLength(1);const snapshot=await getSnapshot(id!);expect(snapshot?.aircraft).toHaveLength(1);expect((await getTrack(a.icao24))[0].latitude).toBe(a.latitude);});
   it("never records demo mode positions",async()=>{const response:AircraftResponse={aircraft:demoAircraft("iberia"),region:"iberia",pollSeconds:120,quotaRemaining:null,source:{provider:"fixtures",status:"demo",observedAt:now(),retrievedAt:now()}};await recordAircraft(response);expect(await getSnapshots("iberia")).toHaveLength(0);});

@@ -1,0 +1,36 @@
+.map-starting {
+  position: absolute;
+  inset: 0 0 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: var(--bg);
+  color: var(--muted);
+  font: 11px var(--mono);
+  pointer-events: none;
+}
+.map-starting svg { width: 18px; color: var(--accent); }
+.section-placeholder {
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font: 10px var(--mono);
+  background: transparent;
+}
+.section-placeholder span { width: 60%; height: 5px; background: var(--border); }
+.timeline-loading {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 72px;
+  display: grid;
+  place-items: center;
+  background: var(--panel);
+  color: var(--muted);
+  font: 10px var(--mono);
+}
+.virtual-list { height: min(52vh, 480px); min-height: 180px; overflow: auto; contain: layout paint; overscroll-behavior: contain; }
+.virtual-list .aircraft-list-row { height: 100%; margin: 0; }
+@media (max-width: 800px) { .virtual-list { height: 42vh; } }

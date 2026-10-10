@@ -1,0 +1,34 @@
+{
+  "shellMs": 734,
+  "mapMs": 2542,
+  "initialRequests": [
+    "http://localhost:3000/api/watchlists",
+    "http://localhost:3000/api/weather/radar",
+    "http://localhost:3000/api/weather/radar",
+    "http://localhost:3000/api/airports/EGLL/weather",
+    "http://localhost:3000/api/history?region=central-europe&date=2026-10-10",
+    "http://localhost:3000/api/airports/EHAM/weather",
+    "http://localhost:3000/api/airports/EDDF/weather"
+  ],
+  "weatherAirportsRequested": [
+    "EGLL",
+    "EHAM",
+    "EDDF",
+    "LFPG",
+    "EDDM",
+    "EIDW",
+    "EBBR",
+    "LSZH",
+    "EGKK",
+    "EGCC",
+    "EGPH",
+    "LIMC",
+    "EKCH",
+    "LOWW",
+    "EPWA"
+  ],
+  "renderedRows": 15,
+  "canvasPreserved": true,
+  "mobileOverflow": false,
+  "errors": []
+}
