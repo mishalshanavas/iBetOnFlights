@@ -1,0 +1,16 @@
+node_modules/
+.next/
+out/
+.env*
+!.env.example
+*.tsbuildinfo
+data/*.db*
+ml/datasets/*
+!ml/datasets/.gitkeep
+ml/models/*
+!ml/models/.gitkeep
+__pycache__/
+.venv/
+test-results/
+playwright-report/
+.vercel/

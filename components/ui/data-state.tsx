@@ -1,0 +1,2 @@
+import { Database,RefreshCw } from "lucide-react";
+export function DataState({title,description,onRetry,compact=false}:{title:string;description:string;onRetry?:()=>void;compact?:boolean}){return <div className={`data-state ${compact?"compact":""}`}><div className="state-icon"><Database size={20}/></div><strong>{title}</strong><p>{description}</p>{onRetry&&<button className="ui-button button-outline" onClick={onRetry}><RefreshCw size={13}/>Try again</button>}</div>;}
