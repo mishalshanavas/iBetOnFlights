@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { Aircraft, AircraftResponse } from "@/lib/types";
 import { ProviderError, timedFetch, type AircraftPositionProvider } from "./base";
 import { cached } from "./cache";
-import { now, recordAircraft } from "@/lib/db/repository";
+import { now, recordAircraft,readCache,writeCache } from "@/lib/db/repository";
 export const boundsSchema=z.tuple([z.number().min(-180).max(180),z.number().min(-90).max(90),z.number().min(-180).max(180),z.number().min(-90).max(90)]).refine(([w,s,e,n])=>e>w&&n>s&&(e-w)*(n-s)<=250,"Select a smaller, valid coverage area (maximum 250 square degrees).");
 const finite=(v:unknown)=>typeof v==="number"&&Number.isFinite(v)?v:null;
 export function normalizeState(row:unknown):Aircraft|null {
@@ -30,6 +30,9 @@ export const opensky:AircraftPositionProvider={async fetch(region,bounds){
   boundsSchema.parse(bounds);
   const pollSeconds=Math.min(600,Math.max(60,Number(process.env.AIRCRAFT_POLL_SECONDS)||120));
   const key=`opensky:${bounds.join(":")}`;
+  let cooldown:{until:number}|null=null;
+  try{cooldown=await readCache<{until:number}>("opensky:quota-cooldown");}catch{/* Keep source reads independent of storage availability. */}
+  if(cooldown&&cooldown.until>now())throw new ProviderError("RATE_LIMITED","OpenSky quota is exhausted. Tracking will resume after the provider's retry interval.",429,cooldown.until-now());
   const result=await cached<AircraftResponse>(key,pollSeconds,async()=>{
     const [w,s,e,n]=bounds;const url=new URL("https://opensky-network.org/api/states/all");
     for(const [key,value] of Object.entries({lamin:s,lomin:w,lamax:n,lomax:e}))url.searchParams.set(key,String(value));
@@ -37,7 +40,7 @@ export const opensky:AircraftPositionProvider={async fetch(region,bounds){
     for(let attempt=0;attempt<3;attempt++){
       const bearer=await accessToken();response=await timedFetch(url.toString(),{headers:bearer?{Authorization:`Bearer ${bearer}`}:{}});
       if(response.status===401 && attempt===0 && bearer){clearToken();continue;}
-      if(response.status===429){const retry=Number(response.headers.get("X-Rate-Limit-Retry-After-Seconds")||response.headers.get("Retry-After"))||600;const err=new ProviderError("RATE_LIMITED","OpenSky quota is exhausted. Tracking will resume after the provider's retry interval.",429,retry);throw err;}
+      if(response.status===429){const retry=Math.max(60,Math.min(86400,Number(response.headers.get("X-Rate-Limit-Retry-After-Seconds")||response.headers.get("Retry-After"))||600));try{await writeCache("opensky:quota-cooldown",{until:now()+retry},retry);}catch{/* The error still exposes the retry interval to clients. */}throw new ProviderError("RATE_LIMITED","OpenSky quota is exhausted. Tracking will resume after the provider's retry interval.",429,retry);}
       if(response.ok)break;
       if(response.status<500||attempt===2)throw new ProviderError("UPSTREAM_ERROR",`OpenSky returned HTTP ${response.status}.`,502);
       await new Promise(resolve=>setTimeout(resolve,250*2**attempt));

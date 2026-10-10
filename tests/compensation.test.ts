@@ -1,0 +1,22 @@
+import { describe,it,expect } from "vitest";
+import { evaluateCompensation,assessmentInput,type AssessmentInput } from "@/lib/compensation/engine";
+const base:AssessmentInput={origin:"EHAM",destination:"EDDF",date:"2026-10-11",airlineJurisdiction:"EU",arrivalDelay:180,reason:"airline"};
+const run=(extra:Partial<AssessmentInput>={})=>evaluateCompensation({...base,...extra});
+describe("Date-versioned EU261 assessment",()=>{
+  it("EU-to-EU short journey has a potential €250 band",()=>{expect(run()).toMatchObject({applies:true,status:"POTENTIALLY_ELIGIBLE",potentialAmount:250});});
+  it("intra-EU journeys longer than 1500 km use €400",()=>{expect(run({origin:"LEMD",destination:"ESSA"}).potentialAmount).toBe(400);});
+  it("EU departures cover non-EU carriers",()=>{expect(run({destination:"OMDB",airlineJurisdiction:"NON_EU",arrivalDelay:300})).toMatchObject({applies:true,potentialAmount:600});});
+  it("non-EU departures require applicable carrier jurisdiction",()=>{expect(run({origin:"KJFK",destination:"EHAM",airlineJurisdiction:"NON_EU"}).status).toBe("NOT_COVERED");expect(run({origin:"KJFK",destination:"EHAM",airlineJurisdiction:"UNKNOWN"}).status).toBe("REQUIRES_EVIDENCE");expect(run({origin:"KJFK",destination:"EHAM",airlineJurisdiction:"EU",arrivalDelay:300}).potentialAmount).toBe(600);});
+  it("flights outside the EU/EEA fall outside scope",()=>{expect(run({origin:"KJFK",destination:"OMDB"}).status).toBe("NOT_COVERED");});
+  it("does not treat UK departure as EU departure",()=>{expect(run({origin:"EGLL",airlineJurisdiction:"NON_EU"}).status).toBe("NOT_COVERED");});
+  it("179 minutes is below the legacy threshold",()=>{expect(run({arrivalDelay:179}).potentialAmount).toBe(0);expect(run({arrivalDelay:180}).potentialAmount).toBe(250);});
+  it("a cancellation requires notice evidence",()=>{expect(run({cancelled:true,noticeDays:null}).status).toBe("REQUIRES_EVIDENCE");expect(run({cancelled:true,noticeDays:14}).potentialAmount).toBe(0);});
+  it("applies the legacy 7–13 day rerouting exception",()=>{expect(run({cancelled:true,noticeDays:10,rerouted:true,rerouteDepartureEarlyMinutes:100,arrivalDelay:200}).potentialAmount).toBe(0);});
+  it("does not exempt weather solely by category",()=>{expect(run({reason:"weather"}).status).toBe("REQUIRES_EVIDENCE");expect(run({reason:"weather",extraordinaryProven:true,reasonableMeasuresProven:true}).status).toBe("POSSIBLY_EXEMPT");});
+  it("unknown and technical causes require evidence",()=>{expect(run({reason:"unknown"}).status).toBe("REQUIRES_EVIDENCE");expect(run({reason:"technical"}).status).toBe("REQUIRES_EVIDENCE");});
+  it("honors the application date and amended strict wording",()=>{expect(run({date:"2027-10-22",arrivalDelay:180}).potentialAmount).toBe(250);expect(run({date:"2027-10-23",arrivalDelay:180}).potentialAmount).toBe(0);expect(run({date:"2027-10-23",arrivalDelay:181}).potentialAmount).toBe(250);});
+  it("amended 50% reduction applies to 600-euro journeys up to four hours",()=>{expect(run({date:"2027-10-23",destination:"KJFK",arrivalDelay:240}).potentialAmount).toBe(300);expect(run({date:"2027-10-23",destination:"KJFK",arrivalDelay:241}).potentialAmount).toBe(600);});
+  it("excludes non-public free fares but includes reward tickets",()=>{expect(run({ticketType:"non_public_free"}).potentialAmount).toBe(0);expect(run({ticketType:"frequent_flyer"}).potentialAmount).toBe(250);});
+  it("rejects invalid dates and identical airports",()=>{expect(()=>assessmentInput.parse({...base,date:"2026-02-30"})).toThrow();expect(()=>run({destination:"EHAM"})).toThrow();});
+  it("never confirms eligibility solely from a form",()=>{expect(run().status).not.toBe("CONFIRMED_ELIGIBLE");});
+});

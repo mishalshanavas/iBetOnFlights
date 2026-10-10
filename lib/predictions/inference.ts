@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { z } from "zod";
 import { ProviderError } from "@/lib/providers/base";
-export const featureNames=["origin_code","destination_code","departure_hour","arrival_hour","day_of_week","month","route_distance_km","route_delay_rate","airport_delay_rate","wind_speed_ms","wind_gust_ms","precipitation_mm","visibility_m","cloud_cover_pct"] as const;
+import { featureNames } from "./features";
 interface Tree {split_feature?:number;threshold?:number;default_left?:boolean;decision_type?:string;left_child?:Tree;right_child?:Tree;leaf_value?:number}
 interface Model {version:string;features:string[];evaluatedOnEuropeanRecords:boolean;models:{threshold:number;trees:Tree[];calibration:{a:number;b:number}}[];metrics:unknown;trainedAt:string;testPeriod:string[];airportEncoding:Record<string,number>}
 export const predictionInput=z.object({features:z.record(z.string(),z.number().finite()),flightId:z.string().max(100).optional(),sourceDataTimestamp:z.number().optional()});
@@ -23,6 +23,8 @@ async function loadModel(){
 }
 export async function predict(features:Record<string,number>){
   const model=await loadModel();const vector=featureNames.map(name=>{if(!Number.isFinite(features[name]))throw new ProviderError("MISSING_FEATURE",`A validated value is required for ${name}.`,422);return features[name];});
+  for(const name of ["route_delay_rate","airport_delay_rate"])if(features[name]<0||features[name]>1)throw new ProviderError("INVALID_FEATURE",`${name} must be between zero and one.`,422);
+  if(features.cloud_cover_pct<0||features.cloud_cover_pct>100)throw new ProviderError("INVALID_FEATURE","Cloud cover must be between zero and one hundred.",422);
   const probabilities=monotoneProbabilities(model.models.map(m=>sigmoid(m.calibration.a*m.trees.reduce((sum,tree)=>sum+treeValue(tree,vector),0)+m.calibration.b)));
   return {probability30:probabilities[0],probability60:probabilities[1],probability180:probabilities[2],modelVersion:model.version,europeanValidated:model.evaluatedOnEuropeanRecords,predictedAt:Math.floor(Date.now()/1000),expectedDelayMin:null,source:"Calibrated LightGBM inference",limitations:model.evaluatedOnEuropeanRecords?"Feature attribution does not establish causation.":"This model has not been evaluated on European flight records."};
 }

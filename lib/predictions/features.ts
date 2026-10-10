@@ -1,0 +1,1 @@
+export const featureNames=["origin_code","destination_code","departure_hour","arrival_hour","day_of_week","month","route_distance_km","route_delay_rate","airport_delay_rate","wind_speed_ms","wind_gust_ms","precipitation_mm","visibility_m","cloud_cover_pct"] as const;

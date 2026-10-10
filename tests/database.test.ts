@@ -1,0 +1,21 @@
+import { describe,it,expect,beforeAll,afterAll } from "vitest";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { rm } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
+import { eq } from "drizzle-orm";
+import { getDb } from "@/lib/db";
+import * as t from "@/lib/db/schema";
+import { recordAircraft,getSnapshots,getSnapshot,getTrack,now } from "@/lib/db/repository";
+import { demoAircraft } from "@/data/demo";
+import type { AircraftResponse } from "@/lib/types";
+const testFile=join(tmpdir(),`flightguard-test-${randomUUID()}.db`);
+beforeAll(()=>{process.env.DATABASE_URL=`file:${testFile.replace(/\\/g,"/")}`;});
+afterAll(async()=>{(await getDb()).$client.close();try{await rm(testFile,{force:true});}catch{/* Windows may retain the native SQLite handle until the isolated test worker exits. */}});
+describe("SQLite persistence",()=>{
+  it("migrates and seeds airport metadata",async()=>{const db=await getDb();const rows=await db.select().from(t.airportsTable);expect(rows.length).toBeGreaterThanOrEqual(22);});
+  it("deduplicates snapshots and preserves aircraft observations",async()=>{const a=demoAircraft("benelux")[0];a.timePosition=now();a.lastContact=now();const data:AircraftResponse={aircraft:[a],region:"benelux",pollSeconds:120,quotaRemaining:null,source:{provider:"test fixture",status:"recent",observedAt:now(),retrievedAt:now()}};const id=await recordAircraft(data);expect(await recordAircraft(data)).toBe(id);const history=await getSnapshots("benelux");expect(history).toHaveLength(1);const snapshot=await getSnapshot(id!);expect(snapshot?.aircraft).toHaveLength(1);expect((await getTrack(a.icao24))[0].latitude).toBe(a.latitude);});
+  it("never records demo mode positions",async()=>{const response:AircraftResponse={aircraft:demoAircraft("iberia"),region:"iberia",pollSeconds:120,quotaRemaining:null,source:{provider:"fixtures",status:"demo",observedAt:now(),retrievedAt:now()}};await recordAircraft(response);expect(await getSnapshots("iberia")).toHaveLength(0);});
+  it("creates and deletes watches without duplicate targets",async()=>{const db=await getDb();await db.insert(t.watchlists).values({targetType:"airport",targetId:"EGLL",createdAt:now()}).onConflictDoNothing();await db.insert(t.watchlists).values({targetType:"airport",targetId:"EGLL",createdAt:now()}).onConflictDoNothing();expect(await db.select().from(t.watchlists)).toHaveLength(1);await db.delete(t.watchlists).where(eq(t.watchlists.targetId,"EGLL"));expect(await db.select().from(t.watchlists)).toHaveLength(0);});
+  it("persists sourced schedules and model version with predictions",async()=>{const db=await getDb();await db.insert(t.flights).values({id:"test-flight",flightNumber:"TEST123",originIcao:"EHAM",destinationIcao:"EDDF",scheduledDeparture:now(),scheduledArrival:now()+3600,status:"test fixture",source:"test fixture",updatedAt:now()});const [f]=await db.select().from(t.flights).where(eq(t.flights.id,"test-flight"));expect(f.destinationIcao).toBe("EDDF");await db.insert(t.predictions).values({flightId:f.id,modelVersion:"test-model",predictedAt:now(),probability30:0.5,probability60:0.2,probability180:0.01,featureSnapshotJson:"{}"});expect((await db.select().from(t.predictions))[0].modelVersion).toBe("test-model");});
+});

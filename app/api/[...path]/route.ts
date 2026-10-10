@@ -15,6 +15,7 @@ import { evaluateCompensation,assessmentInput } from "@/lib/compensation/engine"
 import { modelStatus,predict,predictionInput } from "@/lib/predictions/inference";
 import { evaluateWatchlists } from "@/lib/alerts/evaluate";
 export const runtime="nodejs";
+export const maxDuration=30;
 export const dynamic="force-dynamic";
 type Context={params:Promise<{path:string[]}>};
 const send=(value:unknown,status=200)=>NextResponse.json(value,{status});
@@ -70,7 +71,8 @@ export async function GET(request:NextRequest,context:Context){
 }
 const mutations=new Map<string,{count:number;since:number}>();
 function validateMutation(request:NextRequest){
-  const origin=request.headers.get("origin");if(origin&&origin!==request.nextUrl.origin)throw new ProviderError("ORIGIN_REJECTED","Cross-origin changes are not permitted.",403);
+  const origin=request.headers.get("origin"),host=request.headers.get("host")||request.nextUrl.host;
+  if(origin&&new URL(origin).host!==host)throw new ProviderError("ORIGIN_REJECTED","Cross-origin changes are not permitted.",403);
   const key=request.headers.get("x-forwarded-for")?.split(",")[0]||"local";const previous=mutations.get(key),time=Date.now();
   if(!previous||time-previous.since>60000){mutations.set(key,{count:1,since:time});return;}
   if(previous.count++>=60)throw new ProviderError("RATE_LIMITED","Too many changes; try again in a minute.",429,60);

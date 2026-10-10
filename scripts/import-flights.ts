@@ -1,0 +1,8 @@
+import { readFile } from "node:fs/promises";
+import { z } from "zod";
+import { getDb } from "@/lib/db";
+import { flights } from "@/lib/db/schema";
+import { findAirport } from "@/data/airports";
+const flightSchema=z.object({id:z.string().min(1).max(100),flightNumber:z.string().min(1).max(20),callsign:z.string().nullable().default(null),operatingAirline:z.string().nullable().default(null),originIcao:z.string().refine(v=>!!findAirport(v),"Unknown origin"),destinationIcao:z.string().refine(v=>!!findAirport(v),"Unknown destination"),aircraftIcao24:z.string().regex(/^[a-f0-9]{6}$/i).nullable().default(null),scheduledDeparture:z.number().int().positive(),scheduledArrival:z.number().int().positive(),actualDeparture:z.number().int().positive().nullable().default(null),actualArrival:z.number().int().positive().nullable().default(null),estimatedArrival:z.number().int().positive().nullable().default(null),status:z.string().min(1),source:z.string().min(3),updatedAt:z.number().int().positive()}).refine(f=>f.scheduledArrival>f.scheduledDeparture&&f.originIcao!==f.destinationIcao,"Invalid itinerary");
+async function main(){const path=process.argv[2];if(!path)throw new Error("Usage: npm run data:import -- <sourced-records.json>");const input=z.array(flightSchema).max(10000).parse(JSON.parse(await readFile(path,"utf8"))),db=await getDb();await db.transaction(async tx=>{for(const f of input)await tx.insert(flights).values(f).onConflictDoUpdate({target:flights.id,set:f});});console.log(`Imported ${input.length} sourced flight records. Surveillance was not used to infer itineraries.`);}
+main().catch(e=>{console.error(e instanceof z.ZodError?e.issues:e.message);process.exitCode=1;});

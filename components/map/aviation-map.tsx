@@ -1,6 +1,7 @@
 "use client";
 import { useEffect,useRef,useState } from "react";
-import maplibregl,{type Map as MapType,type GeoJSONSource} from "maplibre-gl";
+import * as maplibregl from "maplibre-gl";
+import {type Map as MapType,type GeoJSONSource} from "maplibre-gl";
 import type { FeatureCollection,Feature,Point } from "geojson";
 import { useQueries } from "@tanstack/react-query";
 import { useDashboard } from "@/stores/dashboard";
@@ -20,11 +21,13 @@ export function AviationMap(){
   const positions=aircraft.data?.aircraft||[];
   useEffect(()=>{
     if(!container.current)return;
+    maplibregl.setWorkerUrl("/vendor/maplibre/maplibre-gl-worker.mjs");
+    maplibregl.setWorkerCount(2);
     const state=useDashboard.getState();
     const map=new maplibregl.Map({container:container.current,style:process.env.NEXT_PUBLIC_MAP_STYLE_URL||"https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",center:[4.7,50.7],zoom:4.9,maxZoom:18,minZoom:3,attributionControl:{compact:true},renderWorldCopies:false});
     mapRef.current=map;
     const popup=new maplibregl.Popup({closeButton:false,closeOnClick:false,offset:15,className:"aircraft-popup"});
-    map.on("load",()=>{setMapError("");setReady(v=>v+1);});
+    map.on("style.load",()=>{setMapError("");setReady(v=>v+1);});
     map.on("error",e=>{if(!map.isStyleLoaded()&&e.error?.message)setMapError("Map tiles could not load. Check your connection or map style URL.");});
     map.on("click",e=>{
       if(useDashboard.getState().measurement)return;
@@ -70,6 +73,7 @@ export function AviationMap(){
     map.addSource("aircraft",{type:"geojson",data:empty});map.addLayer({id:"aircraft-symbols",type:"symbol",source:"aircraft",layout:{"icon-image":"aircraft-icon","icon-size":["interpolate",["linear"],["zoom"],3,0.22,6,0.32,10,0.43],"icon-rotate":["coalesce",["get","heading"],0],"icon-rotation-alignment":"map","icon-allow-overlap":true,"icon-ignore-placement":true},paint:{"icon-color":["case",["==",["get","icao24"],s.selectedAircraft||""],"#77d7e5",["get","onGround"],"#717985","#d4dae2"],"icon-opacity":0.9,"icon-halo-color":"#77d7e5","icon-halo-width":0}});
     map.addLayer({id:"aircraft-labels",type:"symbol",source:"aircraft",minzoom:6,layout:{"text-field":["coalesce",["get","callsign"],""],"text-size":9,"text-font":["Open Sans Regular"],"text-offset":[0,2]},paint:{"text-color":"#bdc5d0","text-halo-color":"#11151a","text-halo-width":2}});
     map.addSource("measurement",{type:"geojson",data:empty});map.addLayer({id:"measurement-line",type:"line",source:"measurement",paint:{"line-color":"#e9b44c","line-width":2,"line-dasharray":[3,2]}});
+    if(container.current)container.current.dataset.layersReady="true";
     setReady(v=>v+1);
   },[ready]);
   useEffect(()=>{const map=mapRef.current;if(!map||!ready)return;setData(map,"aircraft",{type:"FeatureCollection",features:positions.map(a=>({type:"Feature",geometry:{type:"Point",coordinates:[a.longitude,a.latitude]},properties:{icao24:a.icao24,callsign:a.callsign,heading:a.heading,onGround:a.onGround}}))});if(map.getLayer("aircraft-symbols"))map.setPaintProperty("aircraft-symbols","icon-color",["case",["==",["get","icao24"],s.selectedAircraft||""],"#77d7e5",["get","onGround"],"#717985","#d4dae2"]);},[aircraft.data,ready,s.selectedAircraft]);
@@ -79,7 +83,7 @@ export function AviationMap(){
   useEffect(()=>{const map=mapRef.current;if(map?.getLayer("radar")){map.setLayoutProperty("radar","visibility",s.layers.radar?"visible":"none");map.setPaintProperty("radar","raster-opacity",s.opacity);}},[s.layers.radar,s.opacity]);
   useEffect(()=>{const map=mapRef.current;if(!map||!ready)return;const data=track.data?.track||[];setData(map,"track",{type:"FeatureCollection",features:data.length>1?[{type:"Feature",geometry:{type:"LineString",coordinates:data.map(a=>[a.longitude,a.latitude])},properties:{}}]:[]});},[track.data,ready]);
   const forecastSignature=forecasts.map(q=>q.dataUpdatedAt).join(",");
-  useEffect(()=>{const map=mapRef.current;if(!map||!ready)return;const features:Feature<Point>[]=[];forecasts.forEach((q,i)=>{const p=q.data?.current;if(!p)return;features.push({type:"Feature",geometry:{type:"Point",coordinates:[europeanAirports[i].longitude,europeanAirports[i].latitude]},properties:{icao:europeanAirports[i].icao,temperature:p.temperature??0,cloud:p.cloudCover??0,wind:p.windSpeed??0}});});setData(map,"weather",{type:"FeatureCollection",features});},[forecastSignature,ready]);
+  useEffect(()=>{const map=mapRef.current;if(!map||!ready)return;const features:Feature<Point>[]=[];forecasts.forEach((q,i)=>{const p=q.data?.current;if(!p||p.temperature===null||p.cloudCover===null||p.windSpeed===null)return;features.push({type:"Feature",geometry:{type:"Point",coordinates:[europeanAirports[i].longitude,europeanAirports[i].latitude]},properties:{icao:europeanAirports[i].icao,temperature:p.temperature,cloud:p.cloudCover,wind:p.windSpeed}});});setData(map,"weather",{type:"FeatureCollection",features});},[forecastSignature,ready]);
   useEffect(()=>{const map=mapRef.current;if(!map||!s.flyTo)return;const f=s.flyTo;map.flyTo({center:[f.longitude,f.latitude],zoom:f.zoom,padding:{left:window.innerWidth>800&&s.sidebarOpen?s.sidebarWidth:0,right:80,top:80,bottom:100},duration:matchMedia("(prefers-reduced-motion: reduce)").matches?0:900});},[s.flyTo]);
   useEffect(()=>{const map=mapRef.current;if(!map||!s.recenter)return;const r=regions[s.region];map.flyTo({center:r.center,zoom:r.zoom,bearing:0,padding:{left:0,right:0,top:0,bottom:0}});},[s.recenter]);
   useEffect(()=>{const map=mapRef.current;if(!map)return;const desired=s.theme==="dark"?(process.env.NEXT_PUBLIC_MAP_STYLE_URL||"https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json"):"https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";if(ready){map.setStyle(desired);map.once("style.load",()=>setReady(v=>v+1));}},[s.theme]);

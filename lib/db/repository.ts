@@ -33,7 +33,8 @@ export async function recordAircraft(data:AircraftResponse) {
 }
 export async function getSnapshots(region:string,date?:string) {
   const db=await getDb(); const start=date?Date.parse(`${date}T00:00:00Z`)/1000:now()-86400;
-  return db.select().from(t.snapshots).where(and(eq(t.snapshots.region,region),sql`${t.snapshots.observedAt} >= ${start}`,sql`${t.snapshots.observedAt} < ${start+86400}`)).orderBy(asc(t.snapshots.observedAt)).limit(1000);
+  const end=date?start+86400:now()+1;
+  return db.select().from(t.snapshots).where(and(eq(t.snapshots.region,region),sql`${t.snapshots.observedAt} >= ${start}`,sql`${t.snapshots.observedAt} < ${end}`)).orderBy(asc(t.snapshots.observedAt)).limit(1000);
 }
 export async function getSnapshot(id:number) {
   const db=await getDb();const [snapshot]=await db.select().from(t.snapshots).where(eq(t.snapshots.id,id));
