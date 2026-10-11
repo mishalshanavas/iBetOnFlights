@@ -1,0 +1,22 @@
+{
+  "date": "2026-10-11",
+  "source": "Avinor",
+  "total": 329,
+  "pageSize": 50,
+  "supportedOnFirstPage": 0,
+  "nextOffset": 50,
+  "trafficProvider": "OpenSky Network",
+  "trafficSourceStatus": "recent",
+  "aircraftCount": 168,
+  "browser": {
+    "pagination": true,
+    "weather": "both available",
+    "mobileOverflow": false,
+    "pageErrors": []
+  },
+  "checks": {
+    "typecheck": "passed",
+    "unitTests": 55,
+    "browserTests": 3
+  }
+}

@@ -46,7 +46,11 @@ export async function riskStatus(){
 export async function predictRisk(raw:unknown){
   const input=itineraryInput.parse(raw),now=Math.floor(Date.now()/1000);
   if(input.scheduledDeparture<now+3600)throw new ProviderError("TOO_LATE","This estimate requires at least one hour before departure.",422);
-  const {asOf,summary}=await history(),estimate=estimateDelay(summary,input);
+  return riskForRoute(input);
+}
+/** The empirical estimator uses route and airline only; no arrival time is fabricated for public airport boards. */
+export async function riskForRoute(input:{origin:string;destination:string;operatingAirline:string}){
+  const now=Math.floor(Date.now()/1000),{asOf,summary}=await history(),estimate=estimateDelay(summary,input);
   if(!estimate){
     const published=await publishedRisk(input);if(published)return published;
     throw new ProviderError("INSUFFICIENT_HISTORY","No supported CAA route-and-airline cohort (minimum 100 matched movements), or sufficient individual gate-arrival history, is available.",503);

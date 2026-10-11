@@ -16,6 +16,7 @@ import { modelStatus,predict,predictionInput } from "@/lib/predictions/inference
 import { evaluateWatchlists } from "@/lib/alerts/evaluate";
 import { predictRisk,predictRiskBatch,riskStatus,upcomingFlightPredictions } from "@/lib/predictions/schedule-service";
 import { itineraryContext } from "@/lib/predictions/weather-context";
+import { dayFlightPredictions } from "@/lib/predictions/day-service";
 export const runtime="nodejs";
 export const maxDuration=30;
 export const dynamic="force-dynamic";
@@ -64,6 +65,12 @@ export async function GET(request:NextRequest,context:Context){
     if(path[0]==="flights"&&path[1]){const db=await getDb();const [flight]=await db.select().from(t.flights).where(eq(t.flights.id,path[1]));return flight?send({flight}):send({error:{message:"Verified flight not found."}},404);}
     if(p==="model/status")return send(await modelStatus());
     if(p==="schedule/status"||p==="schedule/model/status")return await scheduleApi("v1/status","GET")||send(await riskStatus());
+    if(p==="schedule/day")return send(await dayFlightPredictions(Object.fromEntries(q),async flights=>{
+      const remote=await scheduleApi("v1/predictions/batch","POST",{flights});
+      if(!remote)return predictRiskBatch({flights});
+      if(!remote.ok)throw new ProviderError("PREDICTION_UNAVAILABLE","The prediction API could not score this page. Try again shortly.",remote.status);
+      return remote.json();
+    }));
     if(p==="schedule/flights")return await scheduleApi("v1/flights","GET")||send(await upcomingFlightPredictions(q.get("limit")||50));
     if(p==="analytics/airports")return send(await airportAnalytics(q.get("icao")||undefined));
     if(p==="analytics/routes"){
@@ -76,7 +83,7 @@ export async function GET(request:NextRequest,context:Context){
     if(p==="compensation/history"){const db=await getDb();const records=await db.select().from(t.assessments).orderBy(desc(t.assessments.assessedAt)).limit(30);return send({assessments:records.map(r=>({id:r.id,assessedAt:r.assessedAt,result:JSON.parse(r.resultJson)}))});}
     if(p==="sources/status"){
       let database="connected";try{await getDb();}catch{database="unavailable";}
-      return send({database,sources:[{name:"OpenSky Network",status:process.env.OPENSKY_CLIENT_ID?"OAuth2 configured":"Anonymous · limited quota",detail:"120-second regional polling by default; position age shown on map"},{name:"Open-Meteo",status:"Available without key",detail:"Numerical forecast · 15-minute cache · not METAR"},{name:"RainViewer",status:process.env.RADAR_TILE_PROVIDER==="disabled"?"Disabled":"Available without key",detail:"Timestamped past radar frames; personal / educational use"},{name:"Official NOTAM",status:"Not connected",detail:"Requires authorized provider"},{name:"Flight status / schedules",status:"Import only",detail:"Surveillance positions do not provide verified itineraries"},{name:"EUROCONTROL",status:eurocontrolProvider.available?"Available":"Not connected",detail:eurocontrolProvider.message},{name:"LightGBM",status:(await modelStatus()).available?"Model loaded":"Model not trained",detail:"No fabricated predictions"},{name:"Historical delay estimates",status:(await riskStatus()).available?"Sufficient sample":"Insufficient history",detail:"One-year sourced gate-arrival rates; no model artifact"}]});
+      return send({database,sources:[{name:"OpenSky Network",status:process.env.OPENSKY_CLIENT_ID?"OAuth2 configured":"Anonymous · limited quota",detail:"120-second regional polling by default; position age shown on map"},{name:"Open-Meteo",status:"Available without key",detail:"Numerical forecast · 15-minute cache · not METAR"},{name:"RainViewer",status:process.env.RADAR_TILE_PROVIDER==="disabled"?"Disabled":"Available without key",detail:"Timestamped past radar frames; personal / educational use"},{name:"Official NOTAM",status:"Not connected",detail:"Requires authorized provider"},{name:"Flight status / schedules",status:"Public Oslo feed + imports",detail:"Free Avinor departures; 3-minute cache; limited airport and date coverage"},{name:"EUROCONTROL",status:eurocontrolProvider.available?"Available":"Not connected",detail:eurocontrolProvider.message},{name:"LightGBM",status:(await modelStatus()).available?"Model loaded":"Model not trained",detail:"No fabricated predictions"},{name:"Historical delay estimates",status:(await riskStatus()).available?"Sufficient sample":"Insufficient history",detail:"One-year sourced gate-arrival rates; no model artifact"}]});
     }
     return send({error:{code:"NOT_FOUND",message:"Endpoint not found."}},404);
   }catch(e){return fail(e);}

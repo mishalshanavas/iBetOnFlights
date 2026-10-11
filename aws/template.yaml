@@ -46,6 +46,9 @@ Resources:
         Predict:
           Type: HttpApi
           Properties: {ApiId: !Ref PredictionHttpApi, Path: /v1/predictions, Method: POST}
+        DayFlights:
+          Type: HttpApi
+          Properties: {ApiId: !Ref PredictionHttpApi, Path: /v1/flights/day, Method: GET}
         Batch:
           Type: HttpApi
           Properties: {ApiId: !Ref PredictionHttpApi, Path: /v1/predictions/batch, Method: POST}

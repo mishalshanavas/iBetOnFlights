@@ -13,10 +13,25 @@ import { itineraryContext } from "@/lib/predictions/weather-context";
 import { openMeteo } from "@/lib/providers/weather";
 import { clearPublishedHistoryCache } from "@/lib/predictions/published-service";
 import type { AircraftResponse } from "@/lib/types";
+import { dayFlightPredictions } from "@/lib/predictions/day-service";
 const testFile=join(tmpdir(),`flightguard-test-${randomUUID()}.db`);
 beforeAll(()=>{process.env.DATABASE_URL=`file:${testFile.replace(/\\/g,"/")}`;});
 afterAll(async()=>{(await getDb()).$client.close();try{await rm(testFile,{force:true});}catch{/* Windows may retain the native SQLite handle until the isolated test worker exits. */}});
 describe("SQLite persistence",()=>{
+  it("assesses every day schedule through pagination, including beyond the old 500-flight cap",async()=>{
+    const db=await getDb(),current=now(),start=Math.floor(Date.parse(new Date((current+3*86400)*1000).toISOString().slice(0,10)+"T00:00:00Z")/1000),date=new Date(start*1000).toISOString().slice(0,10);
+    const rows=Array.from({length:601},(_,i)=>({id:`day-fixture-${String(i).padStart(4,"0")}`,flightNumber:`DAY${i}`,operatingAirline:"KLM",originIcao:"EHAM",destinationIcao:"EGLL",scheduledDeparture:start+7200+i,scheduledArrival:start+14400+i,status:"scheduled",source:"test fixture",updatedAt:current}));
+    for(let i=0;i<rows.length;i+=50)await db.insert(t.flights).values(rows.slice(i,i+50));
+    await db.insert(t.flightPredictionEvidence).values([{flightId:rows[500].id,scheduleObservedAt:current,arrivalTimeBasis:"unknown"},{flightId:rows[501].id,scheduleObservedAt:start+7200+501-300,arrivalTimeBasis:"unknown"}]);
+    const predict=vi.fn(async(inputs:unknown[])=>({predictions:inputs.map((_,index)=>({index,prediction:{probability30:.3,probability60:.1,probability180:.01,cancellationRate:.02,cohortSamples:200,method:"caa-published-punctuality-v1",direction:"arrival"},error:null}))}));
+    const board=await dayFlightPredictions({date,source:"imported",offset:500,limit:2},predict);
+    expect(board.total).toBe(601);expect(board.nextOffset).toBe(502);expect(board.flights.map(row=>row.flight.id)).toEqual([rows[500].id,rows[501].id]);
+    expect(board.flights[0].flag).toBe("delay");expect(board.flights[1].error?.code).toBe("UNVERIFIED_SCHEDULE");expect(predict.mock.calls[0][0]).toHaveLength(1);
+    const last=await dayFlightPredictions({date,source:"imported",offset:600,limit:2},predict);expect(last.flights).toHaveLength(1);expect(last.nextOffset).toBeNull();
+    const empty=await dayFlightPredictions({date:new Date((start+86400)*1000).toISOString().slice(0,10),source:"imported"},predict);expect(empty.total).toBe(0);
+    for(const row of rows)await db.delete(t.flights).where(eq(t.flights.id,row.id));
+    await db.delete(t.flightPredictionEvidence).where(eq(t.flightPredictionEvidence.flightId,rows[500].id));await db.delete(t.flightPredictionEvidence).where(eq(t.flightPredictionEvidence.flightId,rows[501].id));
+  });
   it("keeps nearby counts and chronological ordering when history is fetched together",async()=>{
     const at=now()-60,fixture=demoAircraft("british-isles")[0];
     const near={...fixture,icao24:"test01",latitude:51.47,longitude:-0.46,timePosition:at,lastContact:at};
