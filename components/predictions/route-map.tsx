@@ -3,9 +3,11 @@ import { useEffect, useRef, useState } from "react";
 import type { Map, GeoJSONSource } from "maplibre-gl";
 import type { FeatureCollection, LineString } from "geojson";
 import { useDashboard } from "@/stores/dashboard";
+import { useMapMotion } from "@/stores/map-motion";
+import { animateMapPlanes } from "@/lib/aviation/map-motion";
 export function PredictionRouteMap({ routes, selected }: { routes: FeatureCollection<LineString>; selected: string | null }) {
   const container = useRef<HTMLDivElement>(null), map = useRef<Map | null>(null), [ready, setReady] = useState(false), [error, setError] = useState("");
-  const theme = useDashboard(s => s.theme), latest = useRef(routes); latest.current = routes;
+  const theme = useDashboard(s => s.theme), latest = useRef(routes), selection = useRef(selected), motion = useRef<ReturnType<typeof animateMapPlanes> | null>(null); latest.current = routes; selection.current = selected;
   useEffect(() => {
     let disposed = false;
     void import("maplibre-gl").then(gl => {
@@ -26,12 +28,19 @@ export function PredictionRouteMap({ routes, selected }: { routes: FeatureCollec
   }, [theme]);
   useEffect(() => {
     const instance = map.current; if (!ready || !instance) return;
+    const engine = animateMapPlanes(instance, () => ({ ...useMapMotion.getState(), aircraft: [], routes: selection.current ? { ...latest.current, features: latest.current.features.filter(feature => feature.properties?.id === selection.current) } : latest.current, aircraftVisible: false, labels: false, selected: null, extrapolate: false }));
+    motion.current = engine; const unsubscribe = useMapMotion.subscribe(engine.refresh);
+    return () => { unsubscribe(); engine.destroy(); if (motion.current === engine) motion.current = null; };
+  }, [ready]);
+  useEffect(() => {
+    const instance = map.current; if (!ready || !instance) return;
     (instance.getSource("outlook-routes") as GeoJSONSource).setData(routes);
     instance.setPaintProperty("outlook-routes", "line-width", selected ? ["case", ["==", ["get", "id"], selected], 4, 1.5] : 2);
     instance.setPaintProperty("outlook-routes", "line-opacity", selected ? ["case", ["==", ["get", "id"], selected], 1, 0.25] : 0.7);
     const features = selected ? routes.features.filter(feature => feature.properties?.id === selected) : routes.features;
     const points = features.flatMap(feature => feature.geometry.coordinates);
     if (points.length) instance.fitBounds([[Math.min(...points.map(p => p[0])), Math.min(...points.map(p => p[1]))], [Math.max(...points.map(p => p[0])), Math.max(...points.map(p => p[1]))]], { padding: 50, maxZoom: 7, duration: 0 });
+    motion.current?.refresh();
   }, [routes, selected, ready]);
   return <div className="prediction-route-map" data-testid="prediction-route-map" data-map-ready={ready} ref={container}>{error && <div className="prediction-map-message" role="status">{error}</div>}</div>;
 }

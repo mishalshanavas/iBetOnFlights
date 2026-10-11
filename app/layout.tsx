@@ -7,5 +7,6 @@ import "@fontsource-variable/jetbrains-mono";
 import "./globals.css";
 import "./performance.css";
 import "./predictions.css";
+import "./map-motion.css";
 export const metadata:Metadata={title:"FlightGuard · ATC Intelligence",description:"European aviation intelligence. Aircraft surveillance, airport weather, recorded history, and EU261 assessment."};
 export default function RootLayout({children}:{children:React.ReactNode}){return <html lang="en"><body><Providers><AppShell>{children}</AppShell></Providers></body></html>;}
