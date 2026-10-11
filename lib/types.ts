@@ -8,6 +8,7 @@ export interface Aircraft {
   velocity: number | null; heading: number | null; verticalRate: number | null;
   onGround: boolean; timePosition: number | null; lastContact: number;
   squawk: string | null; spi: boolean; positionSource: number | null;
+  animationRoute?: { coordinates: [number, number][]; progress: number; durationSeconds: number; originIcao: string; destinationIcao: string; source: "demo" };
 }
 export interface SourceMeta {
   provider: string; status: "recent" | "cached" | "historical" | "unavailable" | "demo";

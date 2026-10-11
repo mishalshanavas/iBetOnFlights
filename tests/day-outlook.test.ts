@@ -31,6 +31,8 @@ describe("day flight outlook", () => {
     expect(records[0].evidence.scheduleObservedAt).toBe(1791676800);
     const routes = predictionRoutes(records.map(row => ({ flight: row.flight, prediction: null, flag: row.flight.status === "cancelled" ? "reported_cancelled" : "reported_delay", reasons: [], error: null })));
     expect(routes.features.map(feature => feature.properties?.color)).toEqual(["#ff9b45", "#f46b75"]);
+    expect(routes.features.map(feature => feature.properties?.cancelled)).toEqual([false, true]);
+    expect(routes.features[0].properties).toMatchObject({ originIcao: "ENGM", destinationIcao: "EGLL" });
   });
   it("rejects HTML errors and entity documents instead of silently showing no flights", () => {
     expect(() => parseAvinorDepartures("<html>Unavailable</html>", "2026-10-11", 1)).toThrow();

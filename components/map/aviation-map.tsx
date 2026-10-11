@@ -72,6 +72,7 @@ function AviationMapInner(){
       const element=document.createElement("div");element.className="aircraft-tooltip";
       const heading=document.createElement("strong");heading.textContent=a.callsign||"Callsign unavailable";element.append(heading);
       const identity=document.createElement("small");identity.textContent=`ICAO24 ${a.icao24.toUpperCase()}`;element.append(identity);
+      if(a.animationRoute){const route=document.createElement("small");route.textContent=`${a.animationRoute.originIcao} → ${a.animationRoute.destinationIcao} / simulated airport connection`;element.append(route);}
       for(const [key,value] of [["ALTITUDE",`${feet(a.baroAltitude)} ft`],["GROUND SPEED",`${knots(a.velocity)} kt`],["HEADING",a.heading===null?"—":`${Math.round(a.heading)}°`],["VERTICAL RATE",a.verticalRate===null?"—":`${Math.round(a.verticalRate*196.8504)} ft/min`],["OBSERVED",`${formatTime(a.timePosition??a.lastContact)} UTC`]]){const row=document.createElement("div"),label=document.createElement("span"),data=document.createElement("b");label.textContent=key;data.textContent=value;row.append(label,data);element.append(row);}
       popup.setLngLat(hit?.coordinates||[a.longitude,a.latitude]).setDOMContent(element).addTo(instance);
       });

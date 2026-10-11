@@ -1,18 +1,29 @@
 import { describe, expect, it } from "vitest";
-import { motionPosition, visualFlightOffset } from "@/lib/aviation/map-motion";
+import { motionPosition } from "@/lib/aviation/map-motion";
+import { routePosition, type Coordinate } from "@/lib/aviation/flight-path";
+import { findAirport } from "@/data/airports";
 import { demoAircraft } from "@/data/demo";
 const aircraft = { ...demoAircraft("central-europe")[0], latitude: 50, longitude: 5, heading: 90, velocity: 200, onGround: false };
 describe("illustrative map motion", () => {
-  it("keeps visible motion beyond the old observation limit with continuous turns", () => {
-    for (const seconds of [0, 120, 600, 3600]) {
-      const before = visualFlightOffset(seconds, 90), after = visualFlightOffset(seconds + 1, 90);
-      expect(Math.hypot(after.x - before.x, after.y - before.y)).toBeGreaterThan(8);
-      expect(Math.hypot(after.x - before.x, after.y - before.y)).toBeLessThan(15);
+  it("follows waypoints by distance and stays at the destination after landing", () => {
+    const path: Coordinate[] = [[0, 0], [1, 0], [1, 3]];
+    expect(routePosition(path, 0)).toEqual([0, 0]);
+    expect(routePosition(path, .25)[0]).toBeCloseTo(1);
+    expect(routePosition(path, .5)[1]).toBeCloseTo(1);
+    expect(routePosition(path, 1)).toEqual([1, 3]);
+    expect(routePosition(path, 10)).toEqual([1, 3]);
+    expect(path).toEqual([[0, 0], [1, 0], [1, 3]]);
+    expect(Math.abs(routePosition([[179, 0], [-179, 0]], .5)[0])).toBeCloseTo(180);
+    expect(routePosition([[1, 2], [1, 2]], .5)).toEqual([1, 2]);
+  });
+  it("demo flight paths terminate at their named airport, without assigning live destinations", () => {
+    for (const flight of demoAircraft("central-europe")) {
+      const route = flight.animationRoute!, destination = findAirport(route.destinationIcao)!;
+      expect(routePosition(route.coordinates, 1)).toEqual([destination.longitude, destination.latitude]);
+      expect(routePosition(route.coordinates, route.progress)).toEqual([flight.longitude, flight.latitude]);
+      expect(route.originIcao).not.toBe(route.destinationIcao);
+      expect(route.source).toBe("demo");
     }
-    const cycle = 2 * Math.PI / .1;
-    const before = visualFlightOffset(cycle - .001, 45), after = visualFlightOffset(cycle + .001, 45);
-    expect(Math.hypot(after.x - before.x, after.y - before.y)).toBeLessThan(.03);
-    expect(after.rotation).toBeCloseTo(before.rotation, 2);
   });
   it("moves along reported heading without changing source coordinates", () => {
     const before = { ...aircraft }, position = motionPosition(aircraft, 60);
