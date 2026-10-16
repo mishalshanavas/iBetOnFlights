@@ -13,6 +13,7 @@ import * as t from "@/lib/db/schema";
 import { now,getTrack,getSnapshots,getSnapshot,airportAnalytics } from "@/lib/db/repository";
 import { evaluateCompensation,assessmentInput } from "@/lib/compensation/engine";
 import { modelStatus,predict,predictionInput } from "@/lib/predictions/inference";
+import { caaMlStatus } from "@/lib/predictions/caa-ml";
 import { evaluateWatchlists } from "@/lib/alerts/evaluate";
 import { predictRisk,predictRiskBatch,riskStatus,upcomingFlightPredictions } from "@/lib/predictions/schedule-service";
 import { itineraryContext } from "@/lib/predictions/weather-context";
@@ -63,7 +64,7 @@ export async function GET(request:NextRequest,context:Context){
       return send({flights:records,source:records.length?{provider:"Imported verified records",status:"historical",observedAt:Math.max(...records.map(f=>f.updatedAt)),retrievedAt:now()}:unsupportedSource("Flight schedule provider","No verified schedule data available. Search surveillance callsigns separately.")});
     }
     if(path[0]==="flights"&&path[1]){const db=await getDb();const [flight]=await db.select().from(t.flights).where(eq(t.flights.id,path[1]));return flight?send({flight}):send({error:{message:"Verified flight not found."}},404);}
-    if(p==="model/status")return send(await modelStatus());
+    if(p==="model/status")return send({...(await caaMlStatus()),featureModel:await modelStatus()});
     if(p==="schedule/status"||p==="schedule/model/status")return await scheduleApi("v1/status","GET")||send(await riskStatus());
     if(p==="schedule/day")return send(await dayFlightPredictions(Object.fromEntries(q),async flights=>{
       const remote=await scheduleApi("v1/predictions/batch","POST",{flights});
@@ -82,8 +83,8 @@ export async function GET(request:NextRequest,context:Context){
     if(p==="alerts"){await evaluateWatchlists();const db=await getDb();return send({alerts:await db.select().from(t.alerts).orderBy(desc(t.alerts.eventTimestamp)).limit(100)});}
     if(p==="compensation/history"){const db=await getDb();const records=await db.select().from(t.assessments).orderBy(desc(t.assessments.assessedAt)).limit(30);return send({assessments:records.map(r=>({id:r.id,assessedAt:r.assessedAt,result:JSON.parse(r.resultJson)}))});}
     if(p==="sources/status"){
-      let database="connected";try{await getDb();}catch{database="unavailable";}
-      return send({database,sources:[{name:"OpenSky Network",status:process.env.OPENSKY_CLIENT_ID?"OAuth2 configured":"Anonymous · limited quota",detail:"120-second regional polling by default; position age shown on map"},{name:"Open-Meteo",status:"Available without key",detail:"Numerical forecast · 15-minute cache · not METAR"},{name:"RainViewer",status:process.env.RADAR_TILE_PROVIDER==="disabled"?"Disabled":"Available without key",detail:"Timestamped past radar frames; personal / educational use"},{name:"Official NOTAM",status:"Not connected",detail:"Requires authorized provider"},{name:"Flight status / schedules",status:"Public Oslo feed + imports",detail:"Free Avinor departures; 3-minute cache; limited airport and date coverage"},{name:"EUROCONTROL",status:eurocontrolProvider.available?"Available":"Not connected",detail:eurocontrolProvider.message},{name:"LightGBM",status:(await modelStatus()).available?"Model loaded":"Model not trained",detail:"No fabricated predictions"},{name:"Historical delay estimates",status:(await riskStatus()).available?"Sufficient sample":"Insufficient history",detail:"One-year sourced gate-arrival rates; no model artifact"}]});
+      let database="connected";try{await getDb();}catch{database="unavailable";}const ml=await caaMlStatus();
+      return send({database,sources:[{name:"OpenSky Network",status:process.env.OPENSKY_CLIENT_ID?"OAuth2 configured":"Anonymous · limited quota",detail:"120-second regional polling by default; position age shown on map"},{name:"Open-Meteo",status:"Available without key",detail:"Numerical forecast · 15-minute cache · not METAR"},{name:"RainViewer",status:process.env.RADAR_TILE_PROVIDER==="disabled"?"Disabled":"Available without key",detail:"Timestamped past radar frames; personal / educational use"},{name:"Official NOTAM",status:"Not connected",detail:"Requires authorized provider"},{name:"Flight status / schedules",status:"Public Oslo feed + imports",detail:"Free Avinor departures; 3-minute cache; limited airport and date coverage"},{name:"EUROCONTROL",status:eurocontrolProvider.available?"Available":"Not connected",detail:eurocontrolProvider.message},{name:"Flight-delay ML",status:ml.available?"Calibrated model loaded":"Model unavailable",detail:ml.available?"CAA European route/airline cohort risk; measured evaluation at /api/model/status":ml.message},{name:"Historical delay estimates",status:(await riskStatus()).available?"Sufficient sample":"Insufficient history",detail:"One-year sourced gate-arrival rates; no model artifact"}]});
     }
     return send({error:{code:"NOT_FOUND",message:"Endpoint not found."}},404);
   }catch(e){return fail(e);}
@@ -112,6 +113,7 @@ export async function POST(request:NextRequest,context:Context){
       const db=await getDb();await db.insert(t.watchlists).values({targetType:input.targetType,targetId:input.targetId,settings:JSON.stringify(input.settings||{}),createdAt:now()}).onConflictDoNothing();return send({saved:true},201);
     }
     if(p==="predict"){
+      if(!raw||typeof raw!=="object"||!("features" in raw))return send(await predictRisk(raw));
       const input=predictionInput.parse(raw),result=await predict(input.features);const db=await getDb();
       await db.insert(t.predictions).values({...result,flightId:input.flightId,featureSnapshotJson:JSON.stringify(input.features),sourceDataTimestamp:input.sourceDataTimestamp});return send(result);
     }

@@ -26,7 +26,7 @@ export async function dayFlightPredictions(raw: unknown, predict: Predictor = in
       .where(range).orderBy(asc(flights.scheduledDeparture), asc(flights.id)).limit(limit).offset(offset),
     db.select({ total: count() }).from(flights).where(range),
   ]);
-  const inputs: Itinerary[] = [], indices: number[] = [], routes: {index:number;origin:string;destination:string;operatingAirline:string}[]=[];
+  const inputs: Itinerary[] = [], indices: number[] = [], routes: {index:number;origin:string;destination:string;operatingAirline:string;scheduledDeparture:number}[]=[];
   const items: DayItem[] = records.map(({ flight, evidence }, index) => {
     const reportedDelay=flight.status==="reported_delay"&&flight.updatedAt<=asOf;
     const item: DayItem = { flight, prediction: null, flag: reportedDelay?"reported_delay":"unavailable", reasons: [], error: null };
@@ -39,7 +39,7 @@ export async function dayFlightPredictions(raw: unknown, predict: Predictor = in
     if (!evidence || evidence.scheduleObservedAt > Math.min(asOf, flight.scheduledDeparture - 3600)) return unavailable("UNVERIFIED_SCHEDULE", "A timestamped schedule observed at least one hour before departure is required.");
     if(live){
       if(!findAirport(flight.originIcao)||!findAirport(flight.destinationIcao)||!flight.operatingAirline)return unavailable("UNSUPPORTED_ROUTE","This route or airline is outside the available historical coverage.");
-      routes.push({index,origin:flight.originIcao,destination:flight.destinationIcao,operatingAirline:flight.operatingAirline});return item;
+      routes.push({index,origin:flight.originIcao,destination:flight.destinationIcao,operatingAirline:flight.operatingAirline,scheduledDeparture:flight.scheduledDeparture});return item;
     }
     const parsed = itineraryInput.safeParse({ origin: flight.originIcao, destination: flight.destinationIcao, operatingAirline: flight.operatingAirline, scheduledDeparture: flight.scheduledDeparture, scheduledArrival: flight.scheduledArrival });
     if (!parsed.success) return unavailable("INVALID_SCHEDULE", "A supported origin, destination, operating airline and complete flight times are required.");

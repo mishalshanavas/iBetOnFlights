@@ -1,0 +1,1385 @@
+{
+  "contract": "caa-europe-cohort-v1",
+  "kind": "calibrated-binomial-lightgbm",
+  "version": "caa-lgbm-20261016T043139.706980Z",
+  "trainedAt": "2026-10-16T04:31:39.707032Z",
+  "dataThrough": "202605",
+  "periods": {
+    "train": [
+      "202301",
+      "202302",
+      "202303",
+      "202304",
+      "202305",
+      "202306",
+      "202307",
+      "202308",
+      "202309",
+      "202310",
+      "202311",
+      "202312",
+      "202401",
+      "202402",
+      "202403",
+      "202404",
+      "202405",
+      "202406",
+      "202407",
+      "202408",
+      "202409",
+      "202410",
+      "202411",
+      "202412",
+      "202501",
+      "202502",
+      "202503",
+      "202504",
+      "202505",
+      "202506",
+      "202507",
+      "202508",
+      "202509",
+      "202510",
+      "202511"
+    ],
+    "selection": [
+      "202601",
+      "202602"
+    ],
+    "calibration": [
+      "202604",
+      "202605"
+    ],
+    "test": [
+      "202607",
+      "202608"
+    ]
+  },
+  "minimumRouteSamples": 100,
+  "minimumRouteMonths": 3,
+  "maximumModelAgeDays": 180,
+  "maximumHorizonDays": 180,
+  "dataset": {
+    "provider": "UK Civil Aviation Authority",
+    "sha256": "3099724863325469438c235b5ddf698d2ee8de641d43e197ce3c4acde0abe149",
+    "aggregateRecords": 13908,
+    "matchedMovements": 1058694,
+    "sourceUrls": [
+      "https://www.caa.co.uk/Documents/Download/10303/ffbf3cdf-a6ff-4501-a1e0-d91d8e39be59/1518",
+      "https://www.caa.co.uk/Documents/Download/10303/ffbf3cdf-a6ff-4501-a1e0-d91d8e39be59/1521",
+      "https://www.caa.co.uk/Documents/Download/10303/ffbf3cdf-a6ff-4501-a1e0-d91d8e39be59/1527",
+      "https://www.caa.co.uk/Documents/Download/10303/ffbf3cdf-a6ff-4501-a1e0-d91d8e39be59/1529",
+      "https://www.caa.co.uk/Documents/Download/10303/ffbf3cdf-a6ff-4501-a1e0-d91d8e39be59/1534",
+      "https://www.caa.co.uk/Documents/Download/10303/ffbf3cdf-a6ff-4501-a1e0-d91d8e39be59/1538",
+      "https://www.caa.co.uk/Documents/Download/10303/ffbf3cdf-a6ff-4501-a1e0-d91d8e39be59/1545",
+      "https://www.caa.co.uk/Documents/Download/10303/ffbf3cdf-a6ff-4501-a1e0-d91d8e39be59/1550",
+      "https://www.caa.co.uk/Documents/Download/10303/ffbf3cdf-a6ff-4501-a1e0-d91d8e39be59/1553",
+      "https://www.caa.co.uk/Documents/Download/10303/ffbf3cdf-a6ff-4501-a1e0-d91d8e39be59/1559",
+      "https://www.caa.co.uk/Documents/Download/10303/ffbf3cdf-a6ff-4501-a1e0-d91d8e39be59/1562",
+      "https://www.caa.co.uk/Documents/Download/10303/ffbf3cdf-a6ff-4501-a1e0-d91d8e39be59/1567",
+      "https://www.caa.co.uk/Documents/Download/12040/43d8c177-ce46-40bd-9b0a-ac45f3bdaaec/1571",
+      "https://www.caa.co.uk/Documents/Download/12040/43d8c177-ce46-40bd-9b0a-ac45f3bdaaec/1579",
+      "https://www.caa.co.uk/Documents/Download/12040/43d8c177-ce46-40bd-9b0a-ac45f3bdaaec/1584",
+      "https://www.caa.co.uk/Documents/Download/12040/43d8c177-ce46-40bd-9b0a-ac45f3bdaaec/1587",
+      "https://www.caa.co.uk/Documents/Download/12040/43d8c177-ce46-40bd-9b0a-ac45f3bdaaec/1591",
+      "https://www.caa.co.uk/Documents/Download/12040/43d8c177-ce46-40bd-9b0a-ac45f3bdaaec/1594",
+      "https://www.caa.co.uk/Documents/Download/12040/43d8c177-ce46-40bd-9b0a-ac45f3bdaaec/1600",
+      "https://www.caa.co.uk/Documents/Download/12040/43d8c177-ce46-40bd-9b0a-ac45f3bdaaec/1603",
+      "https://www.caa.co.uk/Documents/Download/12040/43d8c177-ce46-40bd-9b0a-ac45f3bdaaec/1607",
+      "https://www.caa.co.uk/Documents/Download/12040/43d8c177-ce46-40bd-9b0a-ac45f3bdaaec/1611",
+      "https://www.caa.co.uk/Documents/Download/12040/43d8c177-ce46-40bd-9b0a-ac45f3bdaaec/1616",
+      "https://www.caa.co.uk/Documents/Download/12040/43d8c177-ce46-40bd-9b0a-ac45f3bdaaec/1642",
+      "https://www.caa.co.uk/Documents/Download/24022/3d82eddc-84f7-4692-bc12-a9ab96562d04/1648",
+      "https://www.caa.co.uk/Documents/Download/24022/3d82eddc-84f7-4692-bc12-a9ab96562d04/1659",
+      "https://www.caa.co.uk/Documents/Download/24022/3d82eddc-84f7-4692-bc12-a9ab96562d04/1664",
+      "https://www.caa.co.uk/Documents/Download/24022/3d82eddc-84f7-4692-bc12-a9ab96562d04/1668",
+      "https://www.caa.co.uk/Documents/Download/24022/3d82eddc-84f7-4692-bc12-a9ab96562d04/1672",
+      "https://www.caa.co.uk/Documents/Download/24022/3d82eddc-84f7-4692-bc12-a9ab96562d04/1679",
+      "https://www.caa.co.uk/Documents/Download/24022/3d82eddc-84f7-4692-bc12-a9ab96562d04/1684",
+      "https://www.caa.co.uk/Documents/Download/24022/3d82eddc-84f7-4692-bc12-a9ab96562d04/1689",
+      "https://www.caa.co.uk/Documents/Download/24022/3d82eddc-84f7-4692-bc12-a9ab96562d04/1694",
+      "https://www.caa.co.uk/Documents/Download/24022/3d82eddc-84f7-4692-bc12-a9ab96562d04/1699",
+      "https://www.caa.co.uk/Documents/Download/24022/3d82eddc-84f7-4692-bc12-a9ab96562d04/1703",
+      "https://www.caa.co.uk/Documents/Download/24022/3d82eddc-84f7-4692-bc12-a9ab96562d04/1710",
+      "https://www.caa.co.uk/Documents/Download/26825/de96ee2c-f138-4043-b7d5-08a1edf7a5c8/1719",
+      "https://www.caa.co.uk/Documents/Download/26825/de96ee2c-f138-4043-b7d5-08a1edf7a5c8/1722",
+      "https://www.caa.co.uk/Documents/Download/26825/de96ee2c-f138-4043-b7d5-08a1edf7a5c8/1728",
+      "https://www.caa.co.uk/Documents/Download/26825/de96ee2c-f138-4043-b7d5-08a1edf7a5c8/1734",
+      "https://www.caa.co.uk/Documents/Download/26825/de96ee2c-f138-4043-b7d5-08a1edf7a5c8/1740",
+      "https://www.caa.co.uk/Documents/Download/26825/de96ee2c-f138-4043-b7d5-08a1edf7a5c8/1744",
+      "https://www.caa.co.uk/Documents/Download/26825/de96ee2c-f138-4043-b7d5-08a1edf7a5c8/1750",
+      "https://www.caa.co.uk/Documents/Download/26825/de96ee2c-f138-4043-b7d5-08a1edf7a5c8/1754"
+    ],
+    "periods": [
+      "202301",
+      "202302",
+      "202303",
+      "202304",
+      "202305",
+      "202306",
+      "202307",
+      "202308",
+      "202309",
+      "202310",
+      "202311",
+      "202312",
+      "202401",
+      "202402",
+      "202403",
+      "202404",
+      "202405",
+      "202406",
+      "202407",
+      "202408",
+      "202409",
+      "202410",
+      "202411",
+      "202412",
+      "202501",
+      "202502",
+      "202503",
+      "202504",
+      "202505",
+      "202506",
+      "202507",
+      "202508",
+      "202509",
+      "202510",
+      "202511",
+      "202512",
+      "202601",
+      "202602",
+      "202603",
+      "202604",
+      "202605",
+      "202606",
+      "202607",
+      "202608"
+    ],
+    "individualFlightRecords": 0
+  },
+  "evaluationScope": "Retrospective monthly route/airline cohorts, with one-month embargoes. Not individual-flight accuracy or a point-in-time backtest; later report revisions can affect results.",
+  "metrics": {
+    "30": {
+      "brier": 0.1440879334409062,
+      "logLoss": 0.4594672298500416,
+      "prAuc": 0.2672523064707727,
+      "rocAuc": 0.6225813677536219,
+      "prevalence": 0.18119954351409612,
+      "meanPrediction": 0.17255491969071796,
+      "positives": 8574,
+      "negatives": 38744,
+      "movements": 47318,
+      "cohorts": 568,
+      "calibrationError": 0.018012631928224793,
+      "calibrationBins": [
+        {
+          "movements": 4785,
+          "predicted": 0.06579135193439378,
+          "observed": 0.07983281086729363
+        },
+        {
+          "movements": 5271,
+          "predicted": 0.1008937512006228,
+          "observed": 0.12122936824132043
+        },
+        {
+          "movements": 6499,
+          "predicted": 0.1250695213821241,
+          "observed": 0.1484843822126481
+        },
+        {
+          "movements": 6697,
+          "predicted": 0.14367005345312833,
+          "observed": 0.1582798267881141
+        },
+        {
+          "movements": 5061,
+          "predicted": 0.16233633997118538,
+          "observed": 0.18494368701837582
+        },
+        {
+          "movements": 4988,
+          "predicted": 0.18303982187920406,
+          "observed": 0.17321571772253408
+        },
+        {
+          "movements": 3522,
+          "predicted": 0.20751897208356104,
+          "observed": 0.206984667802385
+        },
+        {
+          "movements": 3579,
+          "predicted": 0.23669293672983363,
+          "observed": 0.26236378876781224
+        },
+        {
+          "movements": 3217,
+          "predicted": 0.2742203900509744,
+          "observed": 0.27137084239975134
+        },
+        {
+          "movements": 3699,
+          "predicted": 0.3645813078526115,
+          "observed": 0.32089753987564207
+        }
+      ],
+      "seasonalRouteBaseline": {
+        "brier": 0.147861956128076,
+        "logLoss": 0.47078681881666323,
+        "prAuc": 0.2567318958233668,
+        "rocAuc": 0.6063638149246258,
+        "prevalence": 0.18119954351409612,
+        "meanPrediction": 0.23571829111664408,
+        "positives": 8574,
+        "negatives": 38744,
+        "movements": 47318,
+        "cohorts": 568,
+        "calibrationError": 0.054518747602547976,
+        "calibrationBins": [
+          {
+            "movements": 4024,
+            "predicted": 0.13059539710031337,
+            "observed": 0.10064612326043737
+          },
+          {
+            "movements": 4270,
+            "predicted": 0.16306607455547512,
+            "observed": 0.1161592505854801
+          },
+          {
+            "movements": 6217,
+            "predicted": 0.18868896449991457,
+            "observed": 0.14026057584043752
+          },
+          {
+            "movements": 5897,
+            "predicted": 0.20970960374637287,
+            "observed": 0.16550788536544006
+          },
+          {
+            "movements": 5542,
+            "predicted": 0.22728660267300616,
+            "observed": 0.17033561891014073
+          },
+          {
+            "movements": 5297,
+            "predicted": 0.24523460056811514,
+            "observed": 0.17934680007551443
+          },
+          {
+            "movements": 5323,
+            "predicted": 0.26735653964434114,
+            "observed": 0.20082660154048468
+          },
+          {
+            "movements": 3913,
+            "predicted": 0.2889010151614593,
+            "observed": 0.217224635829287
+          },
+          {
+            "movements": 4124,
+            "predicted": 0.32569158508940416,
+            "observed": 0.257274490785645
+          },
+          {
+            "movements": 2711,
+            "predicted": 0.39350151095539243,
+            "observed": 0.35079306528956106
+          }
+        ]
+      },
+      "globalBaseline": {
+        "brier": 0.14837390580867918,
+        "logLoss": 0.4732334884864214,
+        "prAuc": 0.18119954351409612,
+        "rocAuc": 0.5,
+        "prevalence": 0.18119954351409612,
+        "meanPrediction": 0.17843605580834368,
+        "positives": 8574,
+        "negatives": 38744,
+        "movements": 47318,
+        "cohorts": 568,
+        "calibrationError": 0.02579362125794426,
+        "calibrationBins": [
+          {
+            "movements": 7126,
+            "predicted": 0.17843605580834365,
+            "observed": 0.17976424361493124
+          },
+          {
+            "movements": 5062,
+            "predicted": 0.1784360558083437,
+            "observed": 0.19913077834847887
+          },
+          {
+            "movements": 3641,
+            "predicted": 0.1784360558083437,
+            "observed": 0.24388904147212304
+          },
+          {
+            "movements": 3904,
+            "predicted": 0.1784360558083437,
+            "observed": 0.2072233606557377
+          },
+          {
+            "movements": 3945,
+            "predicted": 0.17843605580834368,
+            "observed": 0.15665399239543726
+          },
+          {
+            "movements": 7107,
+            "predicted": 0.17843605580834368,
+            "observed": 0.14647530603630224
+          },
+          {
+            "movements": 4830,
+            "predicted": 0.1784360558083437,
+            "observed": 0.17701863354037267
+          },
+          {
+            "movements": 3989,
+            "predicted": 0.17843605580834374,
+            "observed": 0.21709701679618953
+          },
+          {
+            "movements": 3640,
+            "predicted": 0.17843605580834374,
+            "observed": 0.19395604395604396
+          },
+          {
+            "movements": 4074,
+            "predicted": 0.1784360558083437,
+            "observed": 0.12322042218949436
+          }
+        ]
+      },
+      "brierSkillVsRoute": 0.025523960226123354,
+      "brierSkillVsGlobal": 0.028886294691867986,
+      "monthly": {
+        "202607": {
+          "brier": 0.1352328855626404,
+          "logLoss": 0.4370138720790635,
+          "prAuc": 0.2626001704479702,
+          "rocAuc": 0.6368817648845162,
+          "prevalence": 0.1677005528125923,
+          "meanPrediction": 0.1912596758765166,
+          "positives": 3974,
+          "negatives": 19723,
+          "movements": 23697,
+          "cohorts": 284,
+          "calibrationError": 0.023559123063924308,
+          "calibrationBins": [
+            {
+              "movements": 2211,
+              "predicted": 0.07719504148580152,
+              "observed": 0.06331976481230213
+            },
+            {
+              "movements": 3126,
+              "predicted": 0.11813580764278411,
+              "observed": 0.11580294305822136
+            },
+            {
+              "movements": 3326,
+              "predicted": 0.14700704765240388,
+              "observed": 0.11815995189416717
+            },
+            {
+              "movements": 2896,
+              "predicted": 0.1656809290913889,
+              "observed": 0.15676795580110497
+            },
+            {
+              "movements": 2977,
+              "predicted": 0.18042747001587237,
+              "observed": 0.1498152502519315
+            },
+            {
+              "movements": 2363,
+              "predicted": 0.20139853341493455,
+              "observed": 0.16631400761743545
+            },
+            {
+              "movements": 1929,
+              "predicted": 0.23139350803131883,
+              "observed": 0.20217729393468117
+            },
+            {
+              "movements": 1479,
+              "predicted": 0.26221204432878464,
+              "observed": 0.2515212981744422
+            },
+            {
+              "movements": 1632,
+              "predicted": 0.29874545322077034,
+              "observed": 0.29411764705882354
+            },
+            {
+              "movements": 1758,
+              "predicted": 0.3918047632429354,
+              "observed": 0.3094425483503982
+            }
+          ]
+        },
+        "202608": {
+          "brier": 0.15297147222297575,
+          "logLoss": 0.4819928307602007,
+          "prAuc": 0.2871114669121281,
+          "rocAuc": 0.6344596647184004,
+          "prevalence": 0.19474196689386564,
+          "meanPrediction": 0.1537899814012776,
+          "positives": 4600,
+          "negatives": 19021,
+          "movements": 23621,
+          "cohorts": 284,
+          "calibrationError": 0.04095198549258805,
+          "calibrationBins": [
+            {
+              "movements": 2201,
+              "predicted": 0.05684104923315395,
+              "observed": 0.07950931394820536
+            },
+            {
+              "movements": 2674,
+              "predicted": 0.08676571121514381,
+              "observed": 0.12303664921465969
+            },
+            {
+              "movements": 3238,
+              "predicted": 0.1123586919920866,
+              "observed": 0.14731315626930203
+            },
+            {
+              "movements": 3645,
+              "predicted": 0.12967880727423864,
+              "observed": 0.16652949245541837
+            },
+            {
+              "movements": 3396,
+              "predicted": 0.14361813575042734,
+              "observed": 0.1896348645465253
+            },
+            {
+              "movements": 1844,
+              "predicted": 0.16012257453966777,
+              "observed": 0.24240780911062906
+            },
+            {
+              "movements": 1534,
+              "predicted": 0.190244762320225,
+              "observed": 0.23142112125162972
+            },
+            {
+              "movements": 1697,
+              "predicted": 0.21582117775042509,
+              "observed": 0.26812021213906895
+            },
+            {
+              "movements": 1738,
+              "predicted": 0.2531939654666371,
+              "observed": 0.311277330264672
+            },
+            {
+              "movements": 1654,
+              "predicted": 0.33732131793278386,
+              "observed": 0.34461910519951633
+            }
+          ]
+        }
+      }
+    },
+    "60": {
+      "brier": 0.06147836191790467,
+      "logLoss": 0.2377205859525879,
+      "prAuc": 0.1171326279185927,
+      "rocAuc": 0.6536214965986807,
+      "prevalence": 0.06612705524324781,
+      "meanPrediction": 0.08515810964868213,
+      "positives": 3129,
+      "negatives": 44189,
+      "movements": 47318,
+      "cohorts": 568,
+      "calibrationError": 0.020662117063500924,
+      "calibrationBins": [
+        {
+          "movements": 4475,
+          "predicted": 0.020761493071916652,
+          "observed": 0.028156424581005587
+        },
+        {
+          "movements": 5107,
+          "predicted": 0.03425989075285474,
+          "observed": 0.03250440571764245
+        },
+        {
+          "movements": 6039,
+          "predicted": 0.04559563403522246,
+          "observed": 0.04371584699453552
+        },
+        {
+          "movements": 6253,
+          "predicted": 0.055413882468571096,
+          "observed": 0.05629297936990245
+        },
+        {
+          "movements": 6423,
+          "predicted": 0.0664063235215197,
+          "observed": 0.047485598629923714
+        },
+        {
+          "movements": 6217,
+          "predicted": 0.08499976295920626,
+          "observed": 0.05694064661412257
+        },
+        {
+          "movements": 3420,
+          "predicted": 0.11683649351531708,
+          "observed": 0.08654970760233918
+        },
+        {
+          "movements": 2961,
+          "predicted": 0.14226200836401573,
+          "observed": 0.12259371833839919
+        },
+        {
+          "movements": 2883,
+          "predicted": 0.17470287792808667,
+          "observed": 0.13596947624002775
+        },
+        {
+          "movements": 3540,
+          "predicted": 0.24302968751948759,
+          "observed": 0.1443502824858757
+        }
+      ],
+      "seasonalRouteBaseline": {
+        "brier": 0.06125451476465123,
+        "logLoss": 0.2395802948190387,
+        "prAuc": 0.11513622715228776,
+        "rocAuc": 0.6441010624190531,
+        "prevalence": 0.06612705524324781,
+        "meanPrediction": 0.09085324435391036,
+        "positives": 3129,
+        "negatives": 44189,
+        "movements": 47318,
+        "cohorts": 568,
+        "calibrationError": 0.024726189110662523,
+        "calibrationBins": [
+          {
+            "movements": 3845,
+            "predicted": 0.0404351146831159,
+            "observed": 0.030169050715214564
+          },
+          {
+            "movements": 4923,
+            "predicted": 0.053311794110824116,
+            "observed": 0.031281738777168396
+          },
+          {
+            "movements": 5664,
+            "predicted": 0.0639467654494614,
+            "observed": 0.04608050847457627
+          },
+          {
+            "movements": 5657,
+            "predicted": 0.07295757664941267,
+            "observed": 0.04189499734841789
+          },
+          {
+            "movements": 7280,
+            "predicted": 0.0840253166088115,
+            "observed": 0.06291208791208791
+          },
+          {
+            "movements": 5222,
+            "predicted": 0.09649245590182066,
+            "observed": 0.060513213328226734
+          },
+          {
+            "movements": 5341,
+            "predicted": 0.1092258883182066,
+            "observed": 0.07133495600074892
+          },
+          {
+            "movements": 3450,
+            "predicted": 0.1251232153154739,
+            "observed": 0.11594202898550725
+          },
+          {
+            "movements": 3192,
+            "predicted": 0.14649417588372002,
+            "observed": 0.12719298245614036
+          },
+          {
+            "movements": 2744,
+            "predicted": 0.1850960152931737,
+            "observed": 0.1457725947521866
+          }
+        ]
+      },
+      "globalBaseline": {
+        "brier": 0.0617542711650799,
+        "logLoss": 0.24350364277810965,
+        "prAuc": 0.06612705524324781,
+        "rocAuc": 0.5,
+        "prevalence": 0.06612705524324781,
+        "meanPrediction": 0.0660691158297354,
+        "positives": 3129,
+        "negatives": 44189,
+        "movements": 47318,
+        "cohorts": 568,
+        "calibrationError": 0.014905726509369976,
+        "calibrationBins": [
+          {
+            "movements": 7126,
+            "predicted": 0.0660691158297354,
+            "observed": 0.0618860510805501
+          },
+          {
+            "movements": 5062,
+            "predicted": 0.0660691158297354,
+            "observed": 0.0766495456341367
+          },
+          {
+            "movements": 3641,
+            "predicted": 0.0660691158297354,
+            "observed": 0.10162043394671794
+          },
+          {
+            "movements": 3904,
+            "predicted": 0.0660691158297354,
+            "observed": 0.08401639344262295
+          },
+          {
+            "movements": 3945,
+            "predicted": 0.0660691158297354,
+            "observed": 0.05551330798479087
+          },
+          {
+            "movements": 7107,
+            "predicted": 0.0660691158297354,
+            "observed": 0.046292387786689176
+          },
+          {
+            "movements": 4830,
+            "predicted": 0.06606911582973542,
+            "observed": 0.056314699792960665
+          },
+          {
+            "movements": 3989,
+            "predicted": 0.0660691158297354,
+            "observed": 0.08072198546001504
+          },
+          {
+            "movements": 3640,
+            "predicted": 0.06606911582973542,
+            "observed": 0.07774725274725275
+          },
+          {
+            "movements": 4074,
+            "predicted": 0.06606911582973539,
+            "observed": 0.04344624447717231
+          }
+        ]
+      },
+      "brierSkillVsRoute": -0.003654378034231298,
+      "brierSkillVsGlobal": 0.004467856910458479,
+      "monthly": {
+        "202607": {
+          "brier": 0.056015751040077784,
+          "logLoss": 0.2223394560117841,
+          "prAuc": 0.11208513322130512,
+          "rocAuc": 0.6745084656579791,
+          "prevalence": 0.05827741908258429,
+          "meanPrediction": 0.09815245403763961,
+          "positives": 1381,
+          "negatives": 22316,
+          "movements": 23697,
+          "cohorts": 284,
+          "calibrationError": 0.03987503495505531,
+          "calibrationBins": [
+            {
+              "movements": 2258,
+              "predicted": 0.029595693026817013,
+              "observed": 0.018600531443755536
+            },
+            {
+              "movements": 2688,
+              "predicted": 0.04380457730531551,
+              "observed": 0.03162202380952381
+            },
+            {
+              "movements": 2739,
+              "predicted": 0.05779824391657353,
+              "observed": 0.033953997809419496
+            },
+            {
+              "movements": 3675,
+              "predicted": 0.06891745824627173,
+              "observed": 0.035918367346938776
+            },
+            {
+              "movements": 2777,
+              "predicted": 0.07963821586045078,
+              "observed": 0.04249189773136478
+            },
+            {
+              "movements": 3166,
+              "predicted": 0.09402949677187798,
+              "observed": 0.0574857864813645
+            },
+            {
+              "movements": 1722,
+              "predicted": 0.13057672521577976,
+              "observed": 0.08072009291521487
+            },
+            {
+              "movements": 1303,
+              "predicted": 0.16326735046333424,
+              "observed": 0.13277052954719878
+            },
+            {
+              "movements": 1614,
+              "predicted": 0.1878691644589026,
+              "observed": 0.11152416356877323
+            },
+            {
+              "movements": 1755,
+              "predicted": 0.2678631643304603,
+              "observed": 0.13504273504273503
+            }
+          ]
+        },
+        "202608": {
+          "brier": 0.06695854861499048,
+          "logLoss": 0.25315120430944105,
+          "prAuc": 0.13372536284237785,
+          "rocAuc": 0.6660093591034829,
+          "prevalence": 0.07400194741966894,
+          "meanPrediction": 0.07212195626884532,
+          "positives": 1748,
+          "negatives": 21873,
+          "movements": 23621,
+          "cohorts": 284,
+          "calibrationError": 0.01107422919037475,
+          "calibrationBins": [
+            {
+              "movements": 2197,
+              "predicted": 0.017632449111663964,
+              "observed": 0.027765134274010013
+            },
+            {
+              "movements": 2669,
+              "predicted": 0.026442898409694483,
+              "observed": 0.04008992131884601
+            },
+            {
+              "movements": 2812,
+              "predicted": 0.038475677626745634,
+              "observed": 0.03627311522048364
+            },
+            {
+              "movements": 3316,
+              "predicted": 0.04748326825759108,
+              "observed": 0.05307599517490953
+            },
+            {
+              "movements": 3240,
+              "predicted": 0.054717739454645344,
+              "observed": 0.06635802469135803
+            },
+            {
+              "movements": 3100,
+              "predicted": 0.06417729055846881,
+              "observed": 0.0764516129032258
+            },
+            {
+              "movements": 1681,
+              "predicted": 0.1038572199463878,
+              "observed": 0.0975609756097561
+            },
+            {
+              "movements": 1450,
+              "predicted": 0.13076670428962509,
+              "observed": 0.12275862068965518
+            },
+            {
+              "movements": 1637,
+              "predicted": 0.1541708924660859,
+              "observed": 0.15149664019547954
+            },
+            {
+              "movements": 1519,
+              "predicted": 0.22108063460361616,
+              "observed": 0.17116524028966426
+            }
+          ]
+        }
+      }
+    },
+    "180": {
+      "brier": 0.003966843051862142,
+      "logLoss": 0.024920268395872004,
+      "prAuc": 0.010724354307950483,
+      "rocAuc": 0.7034433578175223,
+      "prevalence": 0.003994251658988123,
+      "meanPrediction": 0.003754710031377522,
+      "positives": 189,
+      "negatives": 47129,
+      "movements": 47318,
+      "cohorts": 568,
+      "calibrationError": 0.0005206317850842354,
+      "calibrationBins": [
+        {
+          "movements": 7083,
+          "predicted": 0.0009312457882237298,
+          "observed": 0.0014118311449950586
+        },
+        {
+          "movements": 6235,
+          "predicted": 0.0014773427857769162,
+          "observed": 0.0016038492381716118
+        },
+        {
+          "movements": 6918,
+          "predicted": 0.0018241488855420774,
+          "observed": 0.0017346053772766695
+        },
+        {
+          "movements": 5065,
+          "predicted": 0.0024675466880232505,
+          "observed": 0.002566633761105627
+        },
+        {
+          "movements": 5317,
+          "predicted": 0.0033023915201110064,
+          "observed": 0.003573443671243182
+        },
+        {
+          "movements": 5081,
+          "predicted": 0.004190694897031248,
+          "observed": 0.004133044676244833
+        },
+        {
+          "movements": 2077,
+          "predicted": 0.0054555162244537495,
+          "observed": 0.004333172845450169
+        },
+        {
+          "movements": 2796,
+          "predicted": 0.006653335660939351,
+          "observed": 0.009298998569384835
+        },
+        {
+          "movements": 2893,
+          "predicted": 0.008139697492737888,
+          "observed": 0.00967853439336329
+        },
+        {
+          "movements": 3853,
+          "predicted": 0.011525258778998812,
+          "observed": 0.010641058915131067
+        }
+      ],
+      "seasonalRouteBaseline": {
+        "brier": 0.0039718164297853865,
+        "logLoss": 0.025197961757516523,
+        "prAuc": 0.009646195703203228,
+        "rocAuc": 0.705575297609926,
+        "prevalence": 0.003994251658988123,
+        "meanPrediction": 0.005532898983566204,
+        "positives": 189,
+        "negatives": 47129,
+        "movements": 47318,
+        "cohorts": 568,
+        "calibrationError": 0.001580136946156787,
+        "calibrationBins": [
+          {
+            "movements": 4770,
+            "predicted": 0.0008424312459264982,
+            "observed": 0.0010482180293501049
+          },
+          {
+            "movements": 6880,
+            "predicted": 0.001758776421294496,
+            "observed": 0.0011627906976744186
+          },
+          {
+            "movements": 7134,
+            "predicted": 0.0026574776222811594,
+            "observed": 0.0019624334174376226
+          },
+          {
+            "movements": 4484,
+            "predicted": 0.0036804682249507374,
+            "observed": 0.0028991971454058875
+          },
+          {
+            "movements": 5100,
+            "predicted": 0.0050083810725622645,
+            "observed": 0.0035294117647058825
+          },
+          {
+            "movements": 6509,
+            "predicted": 0.006270902408887976,
+            "observed": 0.004148102627131664
+          },
+          {
+            "movements": 3524,
+            "predicted": 0.0078066921527799975,
+            "observed": 0.004824063564131668
+          },
+          {
+            "movements": 2353,
+            "predicted": 0.010115215034207712,
+            "observed": 0.008499787505312367
+          },
+          {
+            "movements": 3535,
+            "predicted": 0.012056584756313611,
+            "observed": 0.009052333804809052
+          },
+          {
+            "movements": 3029,
+            "predicted": 0.016485081518587574,
+            "observed": 0.011554968636513702
+          }
+        ]
+      },
+      "globalBaseline": {
+        "brier": 0.003978336356618491,
+        "logLoss": 0.02605082837895042,
+        "prAuc": 0.003994251658988123,
+        "rocAuc": 0.5,
+        "prevalence": 0.003994251658988123,
+        "meanPrediction": 0.004191086477291208,
+        "positives": 189,
+        "negatives": 47129,
+        "movements": 47318,
+        "cohorts": 568,
+        "calibrationError": 0.0013037782244290884,
+        "calibrationBins": [
+          {
+            "movements": 7126,
+            "predicted": 0.004191086477291208,
+            "observed": 0.0032276171765366264
+          },
+          {
+            "movements": 5062,
+            "predicted": 0.004191086477291208,
+            "observed": 0.00434610825760569
+          },
+          {
+            "movements": 3641,
+            "predicted": 0.004191086477291208,
+            "observed": 0.008239494644328481
+          },
+          {
+            "movements": 3904,
+            "predicted": 0.004191086477291209,
+            "observed": 0.005379098360655738
+          },
+          {
+            "movements": 3945,
+            "predicted": 0.004191086477291208,
+            "observed": 0.0012674271229404308
+          },
+          {
+            "movements": 7107,
+            "predicted": 0.004191086477291208,
+            "observed": 0.002673420571267764
+          },
+          {
+            "movements": 4830,
+            "predicted": 0.0041910864772912075,
+            "observed": 0.003105590062111801
+          },
+          {
+            "movements": 3989,
+            "predicted": 0.004191086477291208,
+            "observed": 0.00501378791677112
+          },
+          {
+            "movements": 3640,
+            "predicted": 0.004191086477291208,
+            "observed": 0.004945054945054945
+          },
+          {
+            "movements": 4074,
+            "predicted": 0.004191086477291208,
+            "observed": 0.0039273441335297005
+          }
+        ]
+      },
+      "brierSkillVsRoute": 0.0012521671157681435,
+      "brierSkillVsGlobal": 0.0028889726071623656,
+      "monthly": {
+        "202607": {
+          "brier": 0.0036494129525536227,
+          "logLoss": 0.023228442378460144,
+          "prAuc": 0.009545720542676425,
+          "rocAuc": 0.7072680093667694,
+          "prevalence": 0.003671350803899228,
+          "meanPrediction": 0.0038865681294931167,
+          "positives": 87,
+          "negatives": 23610,
+          "movements": 23697,
+          "cohorts": 284,
+          "calibrationError": 0.0008256259710884326,
+          "calibrationBins": [
+            {
+              "movements": 3583,
+              "predicted": 0.0009516420232542901,
+              "observed": 0.0005581914596706671
+            },
+            {
+              "movements": 3156,
+              "predicted": 0.0015123856512634704,
+              "observed": 0.0006337135614702154
+            },
+            {
+              "movements": 3498,
+              "predicted": 0.001878767677653644,
+              "observed": 0.002001143510577473
+            },
+            {
+              "movements": 2844,
+              "predicted": 0.0025964652745986473,
+              "observed": 0.003867791842475387
+            },
+            {
+              "movements": 2391,
+              "predicted": 0.0034482517866169463,
+              "observed": 0.004600585529067336
+            },
+            {
+              "movements": 2380,
+              "predicted": 0.00430827825656977,
+              "observed": 0.003781512605042017
+            },
+            {
+              "movements": 1127,
+              "predicted": 0.005826554183376914,
+              "observed": 0.006211180124223602
+            },
+            {
+              "movements": 1409,
+              "predicted": 0.006755071201635545,
+              "observed": 0.0063875088715401
+            },
+            {
+              "movements": 1398,
+              "predicted": 0.008608231176973877,
+              "observed": 0.005722460658082976
+            },
+            {
+              "movements": 1911,
+              "predicted": 0.012215439328562448,
+              "observed": 0.01098901098901099
+            }
+          ]
+        },
+        "202608": {
+          "brier": 0.004285294474888853,
+          "logLoss": 0.02661753782284838,
+          "prAuc": 0.012400695758921852,
+          "rocAuc": 0.7004345256109161,
+          "prevalence": 0.0043181914398204985,
+          "meanPrediction": 0.003622427682999162,
+          "positives": 102,
+          "negatives": 23519,
+          "movements": 23621,
+          "cohorts": 284,
+          "calibrationError": 0.0013965629336604945,
+          "calibrationBins": [
+            {
+              "movements": 3630,
+              "predicted": 0.0009278450194410437,
+              "observed": 0.001928374655647383
+            },
+            {
+              "movements": 3018,
+              "predicted": 0.001450980899056135,
+              "observed": 0.002982107355864811
+            },
+            {
+              "movements": 3538,
+              "predicted": 0.0017883118638682468,
+              "observed": 0.0014132278123233466
+            },
+            {
+              "movements": 2375,
+              "predicted": 0.002427129750677159,
+              "observed": 0.0008421052631578948
+            },
+            {
+              "movements": 2851,
+              "predicted": 0.003274839647501666,
+              "observed": 0.003156787092248334
+            },
+            {
+              "movements": 2345,
+              "predicted": 0.004102054641722627,
+              "observed": 0.004690831556503198
+            },
+            {
+              "movements": 1142,
+              "predicted": 0.005121488888623045,
+              "observed": 0.002626970227670753
+            },
+            {
+              "movements": 1076,
+              "predicted": 0.0063836195377606755,
+              "observed": 0.011152416356877323
+            },
+            {
+              "movements": 1598,
+              "predicted": 0.007608858888535377,
+              "observed": 0.013141426783479349
+            },
+            {
+              "movements": 2048,
+              "predicted": 0.010690619427144702,
+              "observed": 0.01123046875
+            }
+          ]
+        }
+      }
+    }
+  },
+  "release": {
+    "passed": true,
+    "reasons": []
+  },
+  "partitionSamples": {
+    "train": {
+      "cohorts": 10979,
+      "matchedMovements": 842382
+    },
+    "selection": {
+      "cohorts": 559,
+      "matchedMovements": 42493
+    },
+    "calibration": {
+      "cohorts": 575,
+      "matchedMovements": 47505
+    },
+    "test": {
+      "cohorts": 568,
+      "matchedMovements": 47318
+    }
+  },
+  "selection": {
+    "30": {
+      "leaves": 31,
+      "trees": 500,
+      "blend": 1,
+      "metrics": {
+        "brier": 0.10389204321443357,
+        "logLoss": 0.3595653773632772,
+        "prAuc": 0.17711161559833866,
+        "rocAuc": 0.6057364918057242,
+        "prevalence": 0.1199962346739463,
+        "meanPrediction": 0.11662607407264586,
+        "positives": 5099,
+        "negatives": 37394,
+        "movements": 42493,
+        "cohorts": 559,
+        "calibrationError": 0.010762832799496481,
+        "calibrationBins": [
+          {
+            "movements": 3523,
+            "predicted": 0.07078771095981909,
+            "observed": 0.08231620777746239
+          },
+          {
+            "movements": 4896,
+            "predicted": 0.0866699136559014,
+            "observed": 0.08619281045751634
+          },
+          {
+            "movements": 4050,
+            "predicted": 0.09579167859160992,
+            "observed": 0.07629629629629629
+          },
+          {
+            "movements": 5149,
+            "predicted": 0.10145594774431908,
+            "observed": 0.08797824820353467
+          },
+          {
+            "movements": 5033,
+            "predicted": 0.10855941572981519,
+            "observed": 0.1072918736340155
+          },
+          {
+            "movements": 5443,
+            "predicted": 0.11597062879812395,
+            "observed": 0.11647988241778431
+          },
+          {
+            "movements": 4547,
+            "predicted": 0.12441028326494172,
+            "observed": 0.13679349021332746
+          },
+          {
+            "movements": 3545,
+            "predicted": 0.1376123150683122,
+            "observed": 0.14781382228490833
+          },
+          {
+            "movements": 3626,
+            "predicted": 0.159343893674015,
+            "observed": 0.18587975730832873
+          },
+          {
+            "movements": 2681,
+            "predicted": 0.20992165015498018,
+            "observed": 0.23535994032077584
+          }
+        ]
+      }
+    },
+    "60": {
+      "leaves": 15,
+      "trees": 499,
+      "blend": 1,
+      "metrics": {
+        "brier": 0.045959662801533345,
+        "logLoss": 0.19156143578894405,
+        "prAuc": 0.07498983964046325,
+        "rocAuc": 0.6068283034080695,
+        "prevalence": 0.04861977266843951,
+        "meanPrediction": 0.04266727425900922,
+        "positives": 2066,
+        "negatives": 40427,
+        "movements": 42493,
+        "cohorts": 559,
+        "calibrationError": 0.007036252433872774,
+        "calibrationBins": [
+          {
+            "movements": 4079,
+            "predicted": 0.024645400335864737,
+            "observed": 0.03848982593772984
+          },
+          {
+            "movements": 4265,
+            "predicted": 0.03010081000780417,
+            "observed": 0.030011723329425557
+          },
+          {
+            "movements": 6769,
+            "predicted": 0.0337797112724301,
+            "observed": 0.030876052592702024
+          },
+          {
+            "movements": 4626,
+            "predicted": 0.03696306951879663,
+            "observed": 0.03631647211413749
+          },
+          {
+            "movements": 4820,
+            "predicted": 0.04020879475830841,
+            "observed": 0.041701244813278006
+          },
+          {
+            "movements": 4895,
+            "predicted": 0.04389544785613262,
+            "observed": 0.0508682328907048
+          },
+          {
+            "movements": 4393,
+            "predicted": 0.0482589302693437,
+            "observed": 0.06100614614158889
+          },
+          {
+            "movements": 3823,
+            "predicted": 0.055081851088326264,
+            "observed": 0.0625163484174732
+          },
+          {
+            "movements": 3126,
+            "predicted": 0.06503855795376658,
+            "observed": 0.08029430582213691
+          },
+          {
+            "movements": 1697,
+            "predicted": 0.08835673523840962,
+            "observed": 0.1154979375368297
+          }
+        ]
+      }
+    },
+    "180": {
+      "leaves": 31,
+      "trees": 177,
+      "blend": 1,
+      "metrics": {
+        "brier": 0.00415622391464656,
+        "logLoss": 0.025718590683657484,
+        "prAuc": 0.012288305753782165,
+        "rocAuc": 0.7274738551288025,
+        "prevalence": 0.004188925234744546,
+        "meanPrediction": 0.0038926680432476058,
+        "positives": 178,
+        "negatives": 42315,
+        "movements": 42493,
+        "cohorts": 559,
+        "calibrationError": 0.000976403588991557,
+        "calibrationBins": [
+          {
+            "movements": 5845,
+            "predicted": 0.0012083034584281643,
+            "observed": 0.0011976047904191617
+          },
+          {
+            "movements": 5127,
+            "predicted": 0.0015874171217090712,
+            "observed": 0.0007801833430856252
+          },
+          {
+            "movements": 5633,
+            "predicted": 0.0018376546033349779,
+            "observed": 0.0015977276761938576
+          },
+          {
+            "movements": 4479,
+            "predicted": 0.0021006537924970277,
+            "observed": 0.002902433578923867
+          },
+          {
+            "movements": 5000,
+            "predicted": 0.0025549254329045256,
+            "observed": 0.003
+          },
+          {
+            "movements": 4388,
+            "predicted": 0.0032474691399872143,
+            "observed": 0.005013673655423883
+          },
+          {
+            "movements": 4512,
+            "predicted": 0.004547756564077633,
+            "observed": 0.00576241134751773
+          },
+          {
+            "movements": 3138,
+            "predicted": 0.007001693103655441,
+            "observed": 0.004780114722753346
+          },
+          {
+            "movements": 2568,
+            "predicted": 0.009738156161546788,
+            "observed": 0.012850467289719626
+          },
+          {
+            "movements": 1803,
+            "predicted": 0.019926060896837294,
+            "observed": 0.018857459789240156
+          }
+        ]
+      }
+    }
+  }
+}

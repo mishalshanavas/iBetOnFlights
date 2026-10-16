@@ -11,6 +11,7 @@ import os
 from pathlib import Path
 import re
 import subprocess
+import time
 import urllib.parse
 import urllib.request
 
@@ -35,7 +36,16 @@ BANDS = [
 
 def fetch(url):
     req = urllib.request.Request(url, headers={"User-Agent": "FlightGuard research data importer"})
-    return urllib.request.urlopen(req, timeout=45).read()
+    for attempt in range(4):
+        try:
+            with urllib.request.urlopen(req, timeout=45) as response:
+                if urllib.parse.urlparse(response.url).hostname != "www.caa.co.uk":
+                    raise ValueError("Unexpected download redirect host")
+                return response.read()
+        except (OSError, TimeoutError):
+            if attempt == 3:
+                raise
+            time.sleep(2 ** attempt)
 
 
 def convert(row, url, retrieved):
@@ -74,12 +84,25 @@ def convert(row, url, retrieved):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--start-period", help="First reporting month, YYYYMM (default: previous 12 months)")
+    parser.add_argument("--end-period", help="Last reporting month, YYYYMM inclusive")
+    parser.add_argument("--output-dir", type=Path, default=ROOT / "data/imports/caa")
+    parser.add_argument("--refresh", action="store_true", help="Refresh cached CSV downloads")
     args = parser.parse_args()
     current = datetime.now(timezone.utc)
     index = current.year * 12 + current.month - 1
     start = index - 12
+    def period_index(value):
+        if not re.fullmatch(r"20\d{2}(0[1-9]|1[0-2])", value):
+            parser.error("Periods must be YYYYMM")
+        return int(value[:4]) * 12 + int(value[4:]) - 1
+    if args.start_period:
+        start = period_index(args.start_period)
+    end = period_index(args.end_period) if args.end_period else index - 1
+    if not start <= end < index:
+        parser.error("Select completed reporting months, with start <= end")
     links = {}
-    for year in sorted({start // 12, current.year}):
+    for year in range(start // 12, end // 12 + 1):
         page = f"https://www.caa.co.uk/data-and-analysis/uk-aviation-market/flight-punctuality/uk-flight-punctuality-statistics/{year}/"
         content = fetch(page).decode("utf-8")
         for href, body in re.findall(r'<a\b[^>]*href=[\"\']([^\"\']+)[\"\'][^>]*>(.*?)</a>', content, re.S | re.I):
@@ -89,22 +112,29 @@ def main():
             if not match:
                 continue
             period = match.group(1)
-            month_index = int(period[:4]) * 12 + int(period[4:]) - 1
-            if start <= month_index < index:
+            month_number = int(period[:4]) * 12 + int(period[4:]) - 1
+            if start <= month_number <= end:
                 url = urllib.parse.urljoin(page, html.unescape(href))
                 if urllib.parse.urlparse(url).hostname != "www.caa.co.uk":
                     raise ValueError("Unexpected download host")
                 links[period] = url
     if not links:
         raise RuntimeError("No eligible official CAA monthly CSV links found")
-    target = ROOT / "data/imports/caa"
+    target = args.output_dir
     target.mkdir(parents=True, exist_ok=True)
     records = {}
     retrieved = int(current.timestamp())
+    downloads = []
     for period, url in sorted(links.items()):
-        data = fetch(url)
-        (target / f"{period}.csv").write_bytes(data)
-        source_rows = list(csv.DictReader(io.StringIO(data.decode("utf-8-sig"))))
+        cache = target / f"{period}.csv"
+        data = cache.read_bytes() if cache.exists() and not args.refresh else fetch(url)
+        if not cache.exists() or args.refresh:
+            cache.write_bytes(data)
+        try:
+            decoded = data.decode("utf-8-sig")
+        except UnicodeDecodeError:
+            decoded = data.decode("cp1252")
+        source_rows = list(csv.DictReader(io.StringIO(decoded)))
         imported = 0
         for row in source_rows:
             if row["reporting_period"] != period:
@@ -116,10 +146,12 @@ def main():
                 records[converted["id"]] = converted
                 imported += 1
         print(f"{period}: {imported} supported route/airline/direction aggregates", flush=True)
+        downloads.append({"period": period, "url": url, "sha256": hashlib.sha256(data).hexdigest(),
+                          "bytes": len(data), "aggregateRecords": imported})
     output = target / "records.json"
     output.write_text(json.dumps(list(records.values())))
     (target / "manifest.json").write_text(json.dumps({"provider": "UK Civil Aviation Authority",
-        "retrievedAt": retrieved, "downloads": links, "aggregateRecords": len(records),
+        "retrievedAt": retrieved, "downloads": links, "files": downloads, "aggregateRecords": len(records),
         "individualFlightRecords": 0, "countBasis": "Integer counts reconstructed from published six-decimal percentages"}, indent=2))
     print(f"Prepared {len(records)} real published aggregates. Individual flights were not generated.", flush=True)
     if not args.dry_run:

@@ -16,6 +16,10 @@
     "data:import": "tsx scripts/import-flights.ts",
     "data:export": "tsx scripts/export-positions.ts",
     "data:export-training": "tsx scripts/export-training.ts",
+    "ml:setup": "python3 scripts/setup-ml.py",
+    "ml:download": "python3 scripts/import-caa.py --start-period 202301 --dry-run --output-dir ml/datasets/caa",
+    "ml:train": ".venv/bin/python ml/train_caa.py",
+    "ml:test": ".venv/bin/python -m unittest discover -s tests -p 'test_*.py'",
     "lambda:package": "node scripts/package-lambda.mjs"
   },
   "dependencies": {

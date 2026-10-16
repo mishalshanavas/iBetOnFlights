@@ -6,6 +6,8 @@ import { ProviderError } from "@/lib/providers/base";
 import { itineraryInput } from "./itinerary";
 import { estimateDelay,summarizeDelays,type DelayGroup } from "./empirical";
 import { publishedHistoryStatus,publishedRisk,publishedRouteBoard } from "./published-service";
+import { publishedStatus } from "./caa";
+import { caaMlRisk,caaMlStatus,caaMlRoutes } from "./caa-ml";
 
 const LOOKBACK_SECONDS=365*86400,CACHE_MS=5*60*1000;
 let pending:{expires:number;promise:Promise<Awaited<ReturnType<typeof collectHistory>>>}|null=null;
@@ -35,21 +37,25 @@ async function history(){
 }
 export function clearRiskHistoryCache(){pending=null;}
 export async function riskStatus(){
-  const [{asOf,summary},publishedHistory]=await Promise.all([history(),publishedHistoryStatus()]),total=summary.global.total,severe=summary.global.over180;
+  const [{asOf,summary,historyAvailable},publishedHistory,ml]=await Promise.all([
+    history().then(value=>({...value,historyAvailable:true}),()=>({asOf:Math.floor(Date.now()/1000),summary:summarizeDelays([]),historyAvailable:false})),
+    publishedHistoryStatus().catch(()=>({...publishedStatus([]),message:"Historical database unavailable."})),caaMlStatus()
+  ]),total=summary.global.total,severe=summary.global.over180;
   const gateHistoryAvailable=total>=1000&&severe>=10;
-  return {available:gateHistoryAvailable||publishedHistory.available,gateHistoryAvailable,publishedHistory,
-    method:gateHistoryAvailable?"empirical-history-v1":publishedHistory.available?"caa-published-punctuality-v1":"empirical-history-v1",asOf,
+  return {available:ml.available||gateHistoryAvailable||publishedHistory.available,historyAvailable,gateHistoryAvailable,publishedHistory,ml,
+    method:ml.available?"caa-lightgbm-v1":gateHistoryAvailable?"empirical-history-v1":publishedHistory.available?"caa-published-punctuality-v1":"empirical-history-v1",asOf,
     sampleSize:total,severeDelayCount:severe,minimumSamples:1000,minimumSevereDelays:10,
-    lookbackDays:365,message:gateHistoryAvailable?undefined:publishedHistory.available?"Official CAA route punctuality is available for covered UK-linked routes. Individual flight history is insufficient.":`Need sourced flight history or a supported CAA route cohort. Found ${total} gate-arrival records and ${publishedHistory.aggregateRecords} published aggregates.`,
-    limitations:"Historical arrival delay is not a compensation claim or a validated individual-flight forecast."};
+    lookbackDays:365,message:ml.available?"Calibrated ML risk is available for supported European route/airline cohorts.":gateHistoryAvailable?undefined:publishedHistory.available?"Official CAA route punctuality is available for covered UK-linked routes. Individual flight history is insufficient.":`Need sourced flight history or a supported CAA route cohort. Found ${total} gate-arrival records and ${publishedHistory.aggregateRecords} published aggregates.`,
+    limitations:"Monthly cohort risk and historical arrival delay are not compensation claims or validated individual-flight forecasts."};
 }
 export async function predictRisk(raw:unknown){
   const input=itineraryInput.parse(raw),now=Math.floor(Date.now()/1000);
   if(input.scheduledDeparture<now+3600)throw new ProviderError("TOO_LATE","This estimate requires at least one hour before departure.",422);
   return riskForRoute(input);
 }
-/** The empirical estimator uses route and airline only; no arrival time is fabricated for public airport boards. */
-export async function riskForRoute(input:{origin:string;destination:string;operatingAirline:string}){
+/** Public boards may omit arrival times; ML uses route, airline and departure month only. */
+export async function riskForRoute(input:{origin:string;destination:string;operatingAirline:string;scheduledDeparture?:number}){
+  if(input.scheduledDeparture!==undefined){const modelled=await caaMlRisk({...input,scheduledDeparture:input.scheduledDeparture});if(modelled)return modelled;}
   const now=Math.floor(Date.now()/1000),{asOf,summary}=await history(),estimate=estimateDelay(summary,input);
   if(!estimate){
     const published=await publishedRisk(input);if(published)return published;
@@ -60,11 +66,13 @@ export async function riskForRoute(input:{origin:string;destination:string;opera
 }
 export const batchRiskInput=z.object({flights:z.array(itineraryInput).min(1).max(100)}).strict();
 export async function predictRiskBatch(raw:unknown){
-  const input=batchRiskInput.parse(raw),snapshot=await history();
+  const input=batchRiskInput.parse(raw);
   const predictions=await Promise.all(input.flights.map(async(flight,index)=>{
     try{
       if(flight.scheduledDeparture<Math.floor(Date.now()/1000)+3600)throw new ProviderError("TOO_LATE","This estimate requires at least one hour before departure.",422);
-      const estimate=estimateDelay(snapshot.summary,flight)||await publishedRisk(flight);
+      const modelled=await caaMlRisk(flight);
+      if(modelled)return {index,flight,prediction:modelled,error:null};
+      const snapshot=await history(),estimate=estimateDelay(snapshot.summary,flight)||await publishedRisk(flight);
       if(!estimate)throw new ProviderError("INSUFFICIENT_HISTORY","The historical sample is too small for a rate.",503);
       return {index,flight,prediction:{...estimate,asOf:snapshot.asOf,target:"target" in estimate?estimate.target:"arrival delay at destination gate"},error:null};
     }catch(e){return {index,flight,prediction:null,error:e instanceof ProviderError?{code:e.code,message:e.message}:{code:"PREDICTION_UNAVAILABLE",message:"Estimate unavailable."}};}
@@ -81,12 +89,14 @@ export async function upcomingFlightPredictions(rawLimit:unknown=50){
   const items=await Promise.all(records.map(async({flight,evidence})=>{
     if(!evidence||evidence.scheduleObservedAt>now)return {flight,evidence,prediction:null,error:{code:"UNVERIFIED_SCHEDULE",message:"No timestamped schedule evidence is available."}};
     if(!flight.operatingAirline)return {flight,evidence,prediction:null,error:{code:"MISSING_AIRLINE",message:"Operating airline is required."}};
-    const itinerary={origin:flight.originIcao,destination:flight.destinationIcao,operatingAirline:flight.operatingAirline.trim().toUpperCase()};
-    const prediction=estimateDelay(snapshot.summary,itinerary)||await publishedRisk(itinerary);
+    const itinerary={origin:flight.originIcao,destination:flight.destinationIcao,operatingAirline:flight.operatingAirline.trim().toUpperCase(),scheduledDeparture:flight.scheduledDeparture};
+    const prediction=await caaMlRisk(itinerary)||estimateDelay(snapshot.summary,itinerary)||await publishedRisk(itinerary);
     return {flight,evidence,prediction,error:prediction?null:{code:"INSUFFICIENT_HISTORY",message:"Historical gate-arrival sample is too small."}};
   }));
   items.sort((a,b)=>(b.prediction?.probability180??-1)-(a.prediction?.probability180??-1)||a.flight.scheduledDeparture-b.flight.scheduledDeparture);
-  return {flights:items.slice(0,limit),publishedRoutes:await publishedRouteBoard(30),examined:records.length,status,asOf:snapshot.asOf,
+  const publishedRoutes=await publishedRouteBoard(30),modelRoutes=await caaMlRoutes(30);
+  const supportedRoutes=[...new Map([...modelRoutes,...publishedRoutes].map(row=>[[row.origin,row.destination,row.operatingAirline].join("|"),row])).values()];
+  return {flights:items.slice(0,limit),publishedRoutes,supportedRoutes,examined:records.length,status,asOf:snapshot.asOf,
     source:"First 500 upcoming imported schedules; rates from sourced gate arrivals or CAA published cohorts",
     limitations:"Check each rate's source, reporting airport, and arrival/departure direction. Historical punctuality does not establish compensation eligibility."};
 }

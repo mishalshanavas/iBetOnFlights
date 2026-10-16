@@ -14,9 +14,11 @@ import { openMeteo } from "@/lib/providers/weather";
 import { clearPublishedHistoryCache } from "@/lib/predictions/published-service";
 import type { AircraftResponse } from "@/lib/types";
 import { dayFlightPredictions } from "@/lib/predictions/day-service";
+import { clearCaaModelCache } from "@/lib/predictions/caa-ml";
 const testFile=join(tmpdir(),`flightguard-test-${randomUUID()}.db`);
-beforeAll(()=>{process.env.DATABASE_URL=`file:${testFile.replace(/\\/g,"/")}`;});
-afterAll(async()=>{(await getDb()).$client.close();try{await rm(testFile,{force:true});}catch{/* Windows may retain the native SQLite handle until the isolated test worker exits. */}});
+const previousCaaModelPath=process.env.CAA_MODEL_PATH;
+beforeAll(()=>{process.env.DATABASE_URL=`file:${testFile.replace(/\\/g,"/")}`;process.env.CAA_MODEL_PATH=join(tmpdir(),`missing-model-${randomUUID()}.json`);clearCaaModelCache();});
+afterAll(async()=>{if(previousCaaModelPath===undefined)delete process.env.CAA_MODEL_PATH;else process.env.CAA_MODEL_PATH=previousCaaModelPath;clearCaaModelCache();(await getDb()).$client.close();try{await rm(testFile,{force:true});}catch{/* Windows may retain the native SQLite handle until the isolated test worker exits. */}});
 describe("SQLite persistence",()=>{
   it("assesses every day schedule through pagination, including beyond the old 500-flight cap",async()=>{
     const db=await getDb(),current=now(),start=Math.floor(Date.parse(new Date((current+3*86400)*1000).toISOString().slice(0,10)+"T00:00:00Z")/1000),date=new Date(start*1000).toISOString().slice(0,10);

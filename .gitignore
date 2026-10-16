@@ -11,6 +11,7 @@ ml/datasets/*
 !ml/datasets/.gitkeep
 ml/models/*
 !ml/models/.gitkeep
+!ml/models/caa-model.json
 __pycache__/
 .venv/
 test-results/

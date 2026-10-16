@@ -4,7 +4,7 @@ A map-first European aviation intelligence workspace built with Next.js App Rout
 
 ## Run locally
 
-Requirements: Node 22.12+ and npm. Python is needed only for offline model training.
+Requirements: Node 22.12+ and npm. Python 3.12+ is needed only for offline cohort model training (tested on Python 3.14).
 
 ```powershell
 npm install
@@ -41,9 +41,9 @@ The initial workspace uses **live mode**. If OpenSky is unavailable, the map sho
 | Official NOTAM / EUROCONTROL | No authorized integration connected | Provider interfaces and explicit unavailable states; no restricted-service scraping. |
 | Official METAR/TAF | Not connected | Separate abstraction; forecast fields are never represented as official observations. |
 | Commercial flight status | No live provider connected | Import sourced records using `npm run data:import -- records.json`; API key variable reserved for a future authorized adapter. |
-| Delay estimates | No model or API key needed | Import sourced, timestamped gate-arrival records. At least 1,000 flights and 10 severe delays are required before rates appear. Optional offline model research is separate. |
+| Delay estimates | Bundled calibrated LightGBM model; no API key | Official CAA European route/airline cohorts linked to four UK airports. Monthly risk, with arrival/departure direction preserved. Historical fallbacks remain available. |
 
-No validated European prediction model, official NOTAM feed, or verified live commercial itinerary is bundled. Their unavailable states are intentional. The system does not derive schedules, airline responsibility, runway closures, or cancellation causes from surveillance data.
+A calibrated European route/airline cohort model is bundled; its scope and measured limits are documented below. Official NOTAM feeds and comprehensive verified live commercial itineraries require a provider. The system does not derive schedules, airline responsibility, runway closures, or cancellation causes from surveillance data.
 
 ## Data and recording
 
@@ -66,19 +66,46 @@ Optional research output is local; deployed persistence must use Turso. Detailed
 
 Manual comparison candidates and ticket prices are saved only to browser localStorage, labelled **manually entered**, and kept separate from imported schedules. No ticket prices are generated.
 
+## Flight-delay ML backend
+
+For the complete architecture, dataset schema, ML techniques, setup commands, API examples, historical fallbacks, and troubleshooting, see [the ML backend guide](docs/ml-backend.md).
+
+The app now serves a trained, calibrated LightGBM model through `POST /api/schedule/predict` (also `POST /api/predict` with the same itinerary body), batch predictions, the itinerary weather context, and supported flights on the day board. Inference runs inside Next.js; no separate Python server is required. `GET /api/model/status` and `GET /api/schedule/status` expose evaluation, model age, release status and coverage. Python is only needed to refresh the data and retrain:
+
+```sh
+npm run ml:setup
+# Reuse existing downloads/dependencies:
+npm run ml:download
+npm run ml:train
+```
+
+```sh
+curl http://localhost:3000/api/schedule/predict \
+  -H 'Content-Type: application/json' \
+  -d "{\"origin\":\"EHAM\",\"destination\":\"EGLL\",\"operatingAirline\":\"KLM\",\"scheduledDeparture\":$(date -u -d '+1 day' +%s),\"scheduledArrival\":$(date -u -d '+1 day 2 hours' +%s)}"
+```
+
+Source: [UK Civil Aviation Authority punctuality reports](https://www.caa.co.uk/data-and-analysis/uk-aviation-market/flight-punctuality/uk-flight-punctuality-statistics/2026/), January 2023–August 2026. The European subset contains 13,908 monthly reporting cohorts representing 1,058,694 matched movements, **not individual flight records**. UK domestic movements may be counted at both reporting airports. This covers European routes linked to Heathrow, Gatwick, Manchester and Edinburgh; it does not cover arbitrary intra-EU routes.
+
+The untouched July–August 2026 evaluation includes 47,318 movements. For delays strictly over 30 minutes, ROC-AUC is 0.623 and Brier score improves 2.55% over a seasonal route-history baseline. The 60-minute model has a slightly worse Brier score than that baseline (0.37%), although log loss improves. Three-hour improvement is marginal. These results establish modest cohort-level signal, **not high individual-flight accuracy**. See [the evaluation protocol](docs/model-evaluation.md) and [the machine-readable results](docs/caa-model-evaluation.json).
+
+The model uses month, route, airline and reporting direction. It cannot infer exact delay minutes, cancellations, incoming aircraft delays or weather effects from these aggregates. Unsupported or stale ML estimates fall back to explicitly labelled historical rates where available. Predictions for UK departures describe delay at the UK departure airport; predictions for arrivals into the UK describe delay at the UK arrival airport. API probabilities use CAA's strict `>30`, `>60` and `>180` thresholds, excluding cancellations and unmatched movements.
+
+The committed model is frozen for evaluation: training ends November 2025 and calibration ends May 2026. ML inference expires 180 days after the calibration period ends. Refresh with `npm run ml:setup -- --refresh`; failed retraining writes a candidate artifact and leaves the previous released artifact intact. Raw data stays in ignored `ml/datasets/caa/`; the downloader records source URLs and SHA-256 hashes. The Lambda packager includes the released model.
+
 ## Historical delay estimates and AWS Lambda API
 
 The default map includes **Plane animation** controls: pause/play and 0.25×, 0.5×, 1×, 2×, 4× or 8× speed. Demo flights follow simulated airport connections and finish at the named destination; select a demo aircraft to see its connection. Flight outlook route previews follow their supplied waypoints, stop at the destination airport, and do not restart or fly reported cancelled services. These are time-compressed airport connections, not confirmed ATC flight plans or actual landing reports. OpenSky live state vectors do not supply destination airports: live markers use bounded heading/speed estimates between observations, never invented airport assignments or circular paths. Ground aircraft and recorded snapshots stay stationary. Speed controls affect display only; recorded positions, timestamps and tracks remain unchanged. Animations pause offscreen/in hidden tabs and respect reduced-motion preferences. A canvas layer uses animation frames without updating React state or MapLibre data sources on each frame.
 
 The Predictions page now opens on **Delayed**, a UTC date-based flight outlook. It uses the official public [Avinor flight feed](https://partner.avinor.no/en/services/flight-data/) for Oslo departures without an account or API key, with a shared three-minute cache and a 14-day window. Every available flight is accessible through pages of 50; a missing estimate stays visible with its reason. The feed provides one airport's departure times, not worldwide schedules or scheduled arrival times. Arrival times and aircraft identity are never fabricated. Other authorized schedules can still be imported and selected in the source menu.
 
-Orange means a historical 30-minute delay rate of at least 20%, or an airport-reported delay. Red means a historical cancellation rate of at least 10%, or an airport-reported cancellation. These are explicit watchlist cutoffs, not validated predictions that individual flights will be delayed/cancelled. Each card distinguishes reported status from historical risk and explains the source, comparable sample, measured airport/direction and unknown disruption cause. Cancellation risk stays unavailable for delay-only history. Route lines show airport-to-airport connections for the displayed page, not planned paths or actual tracks. The main map's existing OpenSky feed continues to display recent aircraft positions; it does not identify future schedules from callsigns.
+Orange means a modelled or historical 30-minute delay risk of at least 20%, or an airport-reported delay. Red means a historical cancellation rate of at least 10%, or an airport-reported cancellation. These are explicit watchlist cutoffs, not validated predictions that individual flights will be delayed/cancelled. Each card distinguishes reported status from historical risk and explains the source, comparable sample, measured airport/direction and unknown disruption cause. Cancellation risk stays unavailable for delay-only history. Route lines show airport-to-airport connections for the displayed page, not planned paths or actual tracks. The main map's existing OpenSky feed continues to display recent aircraft positions; it does not identify future schedules from callsigns.
 
-`GET /api/schedule/day?date=YYYY-MM-DD&source=public&offset=0&limit=50` fetches and assesses the selected day. `source=imported` uses database schedules and accepts an optional departure `airport=EGLL`. Page size is bounded to 100; there is no 500-flight cutoff. Public departure-only records use the same historical route estimator against the shared database, without inventing arrival times. Complete imported schedules are scored through the configured private batch API when set. Unsupported dates/providers return explicit errors. Lambda also has a new authenticated `/v1/flights/day` route in its source and deployment template; using that endpoint directly requires deploying the updated Lambda.
+`GET /api/schedule/day?date=YYYY-MM-DD&source=public&offset=0&limit=50` fetches and assesses the selected day. `source=imported` uses database schedules and accepts an optional departure `airport=EGLL`. Page size is bounded to 100; there is no 500-flight cutoff. Public departure-only records use the cohort ML model when supported, followed by historical route estimates, without inventing arrival times. Complete imported schedules are scored through the configured private batch API when set. Unsupported dates/providers return explicit errors. Lambda also has a new authenticated `/v1/flights/day` route in its source and deployment template; using that endpoint directly requires deploying the updated Lambda.
 
 **Check a flight** now asks only for airports, operating airline and scheduled departure/arrival. Weather is fetched automatically; weather threshold inputs have been removed from this screen. They previously flagged weather alerts and never affected the historical prediction percentages. The context API retains its optional thresholds for existing integrations. Changing an itinerary hides its previous result, including responses arriving after the edit.
 
-The `/predictions` screen uses historical rates calculated directly in the API. For individual gate-arrival records it needs at least 1,000 labelled flights and 10 severe delays; smaller route groups are pulled toward the overall sample. When that history is insufficient, the API can return official UK CAA published route-and-airline punctuality for covered UK-linked routes with at least 100 matched movements. The response identifies its method, arrival/departure direction, target, thresholds, reporting months, sample, source URLs, and limitations. These are historical rates, not calibrated individual-flight forecasts or compensation eligibility. The older `/api/predict` weather-feature endpoint remains separate.
+The `/predictions` screen first uses the released cohort ML model on supported routes, then historical rates calculated directly in the API. For individual gate-arrival records it needs at least 1,000 labelled flights and 10 severe delays; smaller route groups are pulled toward the overall sample. When that history is insufficient, the API can return official UK CAA published route-and-airline punctuality for covered UK-linked routes with at least 100 matched movements. The response identifies its method, arrival/departure direction, target, thresholds, reporting months, sample, source URLs, and limitations. These are historical rates, not calibrated individual-flight forecasts or compensation eligibility. The older `/api/predict` weather-feature request format remains supported as a separate model contract.
 
 To fetch public CAA history and import it into the database configured in ignored `.env.local`:
 

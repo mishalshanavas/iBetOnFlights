@@ -15,12 +15,13 @@ export function flagRisk(risk: DayRisk | null): RiskFlag {
   return risk.probability30 >= DAY_POLICY.delay ? "delay" : "lower";
 }
 export function explainRisk(risk: DayRisk): string[] {
-  const published = risk.method === "caa-published-punctuality-v1";
+  const modelled = risk.method === "caa-lightgbm-v1";
+  const published = modelled || risk.method === "caa-published-punctuality-v1";
   return [
-    `${(risk.probability30 * 100).toFixed(1)}% of comparable operated flights were ${published ? "more than" : "at least"} 30 minutes late (${risk.direction || "arrival"}${risk.reportingAirport ? ` at ${risk.reportingAirport}` : ""}).`,
+    modelled ? `Modelled cohort risk: ${(risk.probability30 * 100).toFixed(1)}% probability of more than 30 minutes late (${risk.direction || "arrival"}${risk.reportingAirport ? ` at ${risk.reportingAirport}` : ""}). Individual-flight accuracy is unvalidated.` : `${(risk.probability30 * 100).toFixed(1)}% of comparable operated flights were ${published ? "more than" : "at least"} 30 minutes late (${risk.direction || "arrival"}${risk.reportingAirport ? ` at ${risk.reportingAirport}` : ""}).`,
     `Based on ${risk.cohortSamples.toLocaleString("en-GB")} movements from ${risk.source || "imported gate-arrival history"}${risk.periods?.length ? `, reporting months ${risk.periods.join(", ")}` : ""}${risk.cohort ? `; comparison group: ${risk.cohort.replaceAll("_", " ")}` : ""}.`,
     ...(risk.cancellationRate === undefined ? ["Cancellation risk cannot be estimated from this delay-only history."] : [`${(risk.cancellationRate * 100).toFixed(1)}% of the historical cohort was cancelled; this is not a flight-specific cancellation forecast.`]),
-    "The cause of a future disruption is unknown. Weather, crew, aircraft and air traffic restrictions are not established by these historical rates.",
+    "The cause of a future disruption is unknown. Weather, crew, aircraft and air traffic restrictions are not established by these estimates.",
   ];
 }
 export const dayQuery = z.object({
